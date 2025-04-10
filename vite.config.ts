@@ -22,7 +22,7 @@ export default defineConfig({
             },
         }),
     ],
-    base: '/template-app/',
+    base: '/template-app/build/', // Base URL สำหรับ production
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './resources/js'),
@@ -32,6 +32,19 @@ export default defineConfig({
     server: {
         cors: {
             origin: ['http://127.0.0.1:8000', 'http://10.40.67.84'], // ระบุแหล่งที่มาที่อนุญาต
+        },
+    },
+    build: {
+        outDir: 'public/build', // โฟลเดอร์สำหรับไฟล์ที่ build
+        assetsDir: 'assets', // โฟลเดอร์สำหรับ assets ภายใน outDir
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes('node_modules')) {
+                        return 'vendor'; // แยก vendor chunk ออก
+                    }
+                },
+            },
         },
     },
 });
