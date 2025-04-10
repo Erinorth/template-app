@@ -11,11 +11,10 @@ import { LoaderCircle } from 'lucide-vue-next';
 
 defineProps<{
     status?: string;
-    canResetPassword: boolean;
 }>();
 
 const form = useForm({
-    email: '',
+    egatid: '',
     password: '',
     remember: false,
 });
@@ -28,7 +27,7 @@ const submit = () => {
 </script>
 
 <template>
-    <AuthBase title="Log in to your account" description="Enter your email and password below to log in">
+    <AuthBase title="Log in to your account" description="Enter your EGAT ID and password below to log in">
         <Head title="Log in" />
 
         <div v-if="status" class="mb-4 text-center text-sm font-medium text-green-600">
@@ -38,16 +37,16 @@ const submit = () => {
         <form @submit.prevent="submit" class="flex flex-col gap-6">
             <div class="grid gap-6">
                 <div class="grid gap-2">
-                    <Label for="email">Email address</Label>
+                    <Label for="email">EGAT ID</Label>
                     <Input
-                        id="email"
-                        type="email"
+                        id="egatid"
+                        type="number"
                         required
                         autofocus
                         :tabindex="1"
                         autocomplete="email"
                         v-model="form.email"
-                        placeholder="email@example.com"
+                        placeholder="EGAT ID"
                     />
                     <InputError :message="form.errors.email" />
                 </div>
@@ -55,9 +54,6 @@ const submit = () => {
                 <div class="grid gap-2">
                     <div class="flex items-center justify-between">
                         <Label for="password">Password</Label>
-                        <TextLink v-if="canResetPassword" :href="route('password.request')" class="text-sm" :tabindex="5">
-                            Forgot password?
-                        </TextLink>
                     </div>
                     <Input
                         id="password"
@@ -86,7 +82,7 @@ const submit = () => {
 
             <div class="text-center text-sm text-muted-foreground">
                 Or with
-                <TextLink :href="route('loginEGAT')" :tabindex="5">EGAT ID</TextLink>
+                <TextLink :href="route('login')" :tabindex="5">Email</TextLink>
             </div>
         </form>
     </AuthBase>

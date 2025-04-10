@@ -24,10 +24,26 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
+    public function createEGAT(Request $request): Response
+    {
+        return Inertia::render('auth/LoginEGAT', [
+            'status' => $request->session()->get('status'),
+        ]);
+    }
+
     /**
      * Handle an incoming authentication request.
      */
     public function store(LoginRequest $request): RedirectResponse
+    {
+        $request->authenticate();
+
+        $request->session()->regenerate();
+
+        return redirect()->intended(route('dashboard', absolute: false));
+    }
+
+    public function storeEGAT(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
 

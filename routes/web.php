@@ -2,22 +2,21 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
-
-Route::get('/', function () {
-    return Inertia::render('Welcome');
-})->name('home');
 
 /* Route::get('/', function () {
+    return Inertia::render('Welcome');
+})->name('home'); */
+
+/* Route::get('/', function () {
+    return redirect()->route('login');
+})->name('home'); */
+
+Route::get('/', function () {
     if (Auth::check()) {
         return redirect()->route('dashboard');
     }
     return redirect()->route('login');
-}); */
-
-/* Route::get('/', function () {
-    return Inertia::render('Auth/Login');
-})->middleware('guest')->name('home'); */
+})->name('home');
 
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
