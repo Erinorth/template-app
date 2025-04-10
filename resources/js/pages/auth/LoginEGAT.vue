@@ -20,9 +20,18 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.post(route('login'), {
+    form.post(route('loginEGAT'), {
         onFinish: () => form.reset('password'),
     });
+};
+
+// Validation function to ensure EGAT ID is not more than 6 digits
+const validateEGATID = () => {
+    if (form.egatid.length > 6) {
+        form.errors.egatid = 'EGAT ID must be a maximum of 6 digits.';
+    } else {
+        form.errors.egatid = null;
+    }
 };
 </script>
 
@@ -37,18 +46,20 @@ const submit = () => {
         <form @submit.prevent="submit" class="flex flex-col gap-6">
             <div class="grid gap-6">
                 <div class="grid gap-2">
-                    <Label for="email">EGAT ID</Label>
+                    <Label for="egatid">EGAT ID</Label>
                     <Input
                         id="egatid"
                         type="number"
                         required
                         autofocus
                         :tabindex="1"
-                        autocomplete="email"
-                        v-model="form.email"
+                        autocomplete="off"
+                        v-model="form.egatid"
                         placeholder="EGAT ID"
+                        maxlength="6"
+                        @input="validateEGATID"
                     />
-                    <InputError :message="form.errors.email" />
+                    <InputError :message="form.errors.egatid" />
                 </div>
 
                 <div class="grid gap-2">
