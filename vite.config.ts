@@ -22,10 +22,16 @@ export default defineConfig({
             },
         }),
     ],
+    base: '/template-app/',
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './resources/js'),
             'ziggy-js': resolve(__dirname, 'vendor/tightenco/ziggy'),
+        },
+    },
+    server: {
+        cors: {
+            origin: ['http://127.0.0.1:8000', 'http://10.40.67.84'], // ระบุแหล่งที่มาที่อนุญาต
         },
     },
 });
