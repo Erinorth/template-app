@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Settings\PasswordController;
+use App\Http\Controllers\Settings\PermissionController;
 use App\Http\Controllers\Settings\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -19,7 +20,7 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('settings/Appearance');
     })->name('appearance');
 
-    Route::get('settings/permission', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('settings/permission', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('settings/permission', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('settings/permission', [PermissionController::class, 'edit'])->name('permission.edit');
+    Route::patch('settings/permission', [PermissionController::class, 'update'])->name('permission.update');
+    Route::delete('settings/permission', [PermissionController::class, 'destroy'])->name('permission.destroy');
 });
