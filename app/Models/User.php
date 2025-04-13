@@ -19,6 +19,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'egat_id',
         'name',
         'email',
         'password',
@@ -49,6 +50,6 @@ class User extends Authenticatable
 
     public function census()
     {
-        return $this->hasOne(CenSus::class, 'EMPN', 'name');
+        return $this->hasOne(CenSus::class, 'EMPN', 'egat_id');
     }
 }

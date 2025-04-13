@@ -94,8 +94,9 @@ class AuthenticatedSessionController extends Controller
             $user = User::firstOrCreate(
                 ['email' => $username . '@egat.co.th'],
                 [
+                    'egat_id' => $username,
                     'name' => $username,
-                    'password' => Hash::make('egatwebservice')
+                    'password' => Hash::make($password)
                 ]
             );
 
