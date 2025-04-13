@@ -18,6 +18,10 @@ const sidebarNavItems: NavItem[] = [
         title: 'Appearance',
         href: '/settings/appearance',
     },
+    {
+        title: 'Permission',
+        href: '/settings/permission',
+    },
 ];
 
 const page = usePage();

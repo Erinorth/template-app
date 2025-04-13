@@ -18,4 +18,8 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/Appearance');
     })->name('appearance');
+
+    Route::get('settings/permission', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('settings/permission', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('settings/permission', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
