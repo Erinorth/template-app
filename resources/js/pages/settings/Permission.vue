@@ -28,6 +28,9 @@ const props = defineProps({
 // สร้างตัวแปรเพื่อเก็บข้อมูลผู้ใช้ที่สามารถแก้ไขได้
 const localUsers = ref<User[]>(JSON.parse(JSON.stringify(props.users)));
 
+const successMessage = ref('');
+const showSuccess = ref(false);
+
 // ฟังก์ชันสำหรับอัปเดตสิทธิ์
 const updatePermission = (user: User, permission: string) => {
     const form = useForm({
@@ -39,7 +42,13 @@ const updatePermission = (user: User, permission: string) => {
     form.patch(`/settings/permission/update`, {
         preserveScroll: true,
         onSuccess: () => {
-            // แสดงข้อความแจ้งเตือนเมื่อสำเร็จ (ถ้าต้องการ)
+            successMessage.value = `อัปเดตสิทธิ์ ${permission} สำหรับ ${user.name} เรียบร้อยแล้ว`;
+            showSuccess.value = true;
+            
+            // ซ่อนข้อความหลังจาก 3 วินาที
+            setTimeout(() => {
+                showSuccess.value = false;
+            }, 3000);
         },
     });
 };
@@ -116,6 +125,9 @@ const breadcrumbItems: BreadcrumbItem[] = [
                             </tr>
                         </tbody>
                     </table>
+                    <div v-if="showSuccess" class="fixed bottom-4 right-4 bg-green-500 text-white p-4 rounded-md shadow-lg">
+                        {{ successMessage }}
+                    </div>
                 </div>
             </div>
         </SettingsLayout>
