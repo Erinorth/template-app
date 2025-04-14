@@ -21,6 +21,5 @@ Route::middleware('auth')->group(function () {
     })->name('appearance');
 
     Route::get('settings/permission', [PermissionController::class, 'edit'])->name('permission.edit');
-    Route::patch('settings/permission', [PermissionController::class, 'update'])->name('permission.update');
-    Route::delete('settings/permission', [PermissionController::class, 'destroy'])->name('permission.destroy');
+    Route::patch('/settings/permission/update', [PermissionController::class, 'update'])->name('settings.permission.update');
 });

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
-import { Head } from '@inertiajs/vue3';
-
+import { Head, useForm } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import { type BreadcrumbItem } from '@/types';
 
@@ -18,12 +18,31 @@ interface User {
 }
 
 // กำหนด props
-defineProps({
+const props = defineProps({
     users: {
-        type: Array as () => any[], // ระบุประเภทให้ชัดเจน
+        type: Array as () => User[], // ระบุประเภทให้ชัดเจน
         required: true,
     },
 });
+
+// สร้างตัวแปรเพื่อเก็บข้อมูลผู้ใช้ที่สามารถแก้ไขได้
+const localUsers = ref<User[]>(JSON.parse(JSON.stringify(props.users)));
+
+// ฟังก์ชันสำหรับอัปเดตสิทธิ์
+const updatePermission = (user: User, permission: string) => {
+    const form = useForm({
+        user_id: user.id,
+        permission: permission,
+        value: user[permission as keyof User]
+    });
+
+    form.patch(`/settings/permission/update`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            // แสดงข้อความแจ้งเตือนเมื่อสำเร็จ (ถ้าต้องการ)
+        },
+    });
+};
 
 const breadcrumbItems: BreadcrumbItem[] = [
     {
@@ -58,7 +77,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(user, index) in users" :key="user.id">
+                            <tr v-for="(user, index) in localUsers" :key="user.id">
                                 <td class="px-4 py-2 border">{{ user.egat_id }}</td>
                                 <td class="px-4 py-2 border">{{ user.name }}</td>
                                 <!-- Checkbox สำหรับสิทธิ์ต่าง ๆ -->
@@ -66,6 +85,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
                                     <input
                                         type="checkbox"
                                         v-model="user.can_read"
+                                        @change="updatePermission(user, 'can_read')"
                                         class="form-checkbox h-5 w-5 text-blue-600"
                                     >
                                 </td>
@@ -73,6 +93,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
                                     <input
                                         type="checkbox"
                                         v-model="user.can_create"
+                                        @change="updatePermission(user, 'can_create')"
                                         class="form-checkbox h-5 w-5 text-blue-600"
                                     >
                                 </td>
@@ -80,6 +101,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
                                     <input
                                         type="checkbox"
                                         v-model="user.can_edit"
+                                        @change="updatePermission(user, 'can_edit')"
                                         class="form-checkbox h-5 w-5 text-blue-600"
                                     >
                                 </td>
@@ -87,6 +109,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
                                     <input
                                         type="checkbox"
                                         v-model="user.can_delete"
+                                        @change="updatePermission(user, 'can_delete')"
                                         class="form-checkbox h-5 w-5 text-blue-600"
                                     >
                                 </td>
