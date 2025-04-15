@@ -28,6 +28,15 @@ export const columns: ColumnDef<Payment>[] = [
     enableHiding: false,
   },
   {
+    accessorKey: "id",
+    header: ({ column }) => (
+      h(DataTableColumnHeader, {
+        column: column,
+        title: 'ID'
+      })
+    ),
+  },
+  {
     accessorKey: 'amount',
     header: () => h('div', { class: 'text-right' }, 'Amount'),
     cell: ({ row }) => {
