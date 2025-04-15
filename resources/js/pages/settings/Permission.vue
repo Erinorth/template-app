@@ -11,43 +11,39 @@ import { onMounted } from 'vue'
 import { columns } from '@/components/ui/data-table/columns'
 import DataTable from '@/components/ui/data-table/DataTable.vue'
 
-const data = ref<Payment[]>([])
+// รับค่า props จาก Inertia
+const props = defineProps<{
+  users: UserPermission[];
+}>();
 
-async function getData(): Promise<Payment[]> {
-  // Fetch data from your API here.
-  return [
-    {
-        id: '728ed52f',
-        amount: 100,
-        status: 'pending',
-        email: 'm@example.com',
-    },
-    {
-        id: '489e1d42',
-        amount: 125,
-        status: 'processing',
-        email: 'example@gmail.com',
-    },
-    // ...
-  ]
+// สร้าง reactive reference สำหรับเก็บข้อมูลผู้ใช้
+const data = ref<UserPermission[]>([]);
+
+// ฟังก์ชันสำหรับโหลดข้อมูลจาก props
+async function getData(): Promise<UserPermission[]> {
+  try {
+    // ในกรณีที่ข้อมูลมาจาก props ของ Inertia
+    if (props.users && props.users.length > 0) {
+      return props.users;
+    } 
+    // กรณีข้อมูลไม่มาจาก props (อาจเกิดกรณีนี้หากมีการเปลี่ยนแปลงการทำงาน)
+    else {
+      // ทำการเรียก API โดยตรงด้วย Axios หากจำเป็น
+      const response = await axios.get('/api/permissions');
+      return response.data;
+    }
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้:', error);
+    return [];
+  }
 }
 
+// เรียกใช้ฟังก์ชัน getData ใน onMounted
 onMounted(async () => {
-  data.value = await getData()
-})
+  data.value = await getData();
+});
 
-/* // กำหนด interface สำหรับ User
-interface User {
-  id: number
-  egat_id: string
-  name: string
-  can_read: boolean
-  can_create: boolean
-  can_edit: boolean
-  can_delete: boolean
-}
-
-// กำหนด props
+/* // กำหนด props
 const props = defineProps({
     users: {
         type: Array as () => User[], // ระบุประเภทให้ชัดเจน
@@ -101,9 +97,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
                   title="Permission Management" 
                   description="Manage user permissions and roles within your application." 
                 />
-                <div class="container py-10 mx-auto">
-                    <DataTable :columns="columns" :data="data" />
-                </div>
+                <DataTable :columns="columns" :data="data" />
             </div>
         </SettingsLayout>
     </AppLayout>

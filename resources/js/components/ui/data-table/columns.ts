@@ -4,15 +4,20 @@ import { ColumnDef } from '@tanstack/vue-table'
 import { Checkbox } from '@/components/ui/checkbox'
 import DataTableColumnHeader from '@/components/ui/data-table/DataTableColumnHeader.vue'
 
-interface Payment {
-  id: string
-  amount: number
-  status: string
-  email: string
+// กำหนด interface สำหรับข้อมูลผู้ใช้และสิทธิ์
+interface UserPermission {
+  id: number | string;
+  egat_id: string;
+  name: string;
+  can_read: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+  [key: string]: any; // สำหรับคุณสมบัติอื่นๆ ที่อาจมีเพิ่มเติม
 }
 
-export const columns: ColumnDef<Payment>[] = [
-  {
+export const columns: ColumnDef<UserPermission>[] = [
+  /* {
     id: 'select',
     header: ({ table }) => h(Checkbox, {
         'modelValue': table.getIsAllPageRowsSelected(),
@@ -26,9 +31,9 @@ export const columns: ColumnDef<Payment>[] = [
     }),
     enableSorting: false,
     enableHiding: false,
-  },
+  }, */
   {
-    accessorKey: "id",
+    accessorKey: "egat_id",
     header: ({ column }) => (
       h(DataTableColumnHeader, {
         column: column,
@@ -37,42 +42,51 @@ export const columns: ColumnDef<Payment>[] = [
     ),
   },
   {
-    accessorKey: 'amount',
-    header: () => h('div', { class: 'text-right' }, 'Amount'),
-    cell: ({ row }) => {
-      const amount = Number.parseFloat(row.getValue('amount'))
-      const formatted = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-      }).format(amount)
-      return h('div', { class: 'text-right font-medium' }, formatted)
-    },
-  },
-  {
-    accessorKey: 'status',
-    header: 'Status',
-    cell: ({ row }) => {
-      const status = row.getValue('status')
-      return h('div', { 
-        class: `inline-flex rounded-md px-2 py-1 text-xs font-medium ${
-          status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-          status === 'processing' ? 'bg-blue-100 text-blue-800' : 
-          status === 'success' ? 'bg-green-100 text-green-800' : 
-          'bg-gray-100 text-gray-800'
-        }`
-      }, status)
-    }
-  },
-  {
-    accessorKey: "email",
+    accessorKey: "name",
     header: ({ column }) => (
       h(DataTableColumnHeader, {
         column: column,
-        title: 'Email'
+        title: 'Name'
       })
     ),
   },
   {
+    accessorKey: "can_read",
+    header: ({ column }) => (
+      h(DataTableColumnHeader, {
+        column: column,
+        title: 'Read'
+      })
+    ),
+  },
+  {
+    accessorKey: "can_create",
+    header: ({ column }) => (
+      h(DataTableColumnHeader, {
+        column: column,
+        title: 'Create'
+      })
+    ),
+  },
+  {
+    accessorKey: "can_edit",
+    header: ({ column }) => (
+      h(DataTableColumnHeader, {
+        column: column,
+        title: 'Edit'
+      })
+    ),
+  },
+  {
+    accessorKey: "can_delete",
+    header: ({ column }) => (
+      h(DataTableColumnHeader, {
+        column: column,
+        title: 'Delete'
+      })
+    ),
+  },
+  /* {
     id: 'actions',
     enableHiding: false,
     cell: ({ row }) => {
@@ -83,5 +97,5 @@ export const columns: ColumnDef<Payment>[] = [
         onExpand: row.toggleExpanded,
       }))
     },
-  },
+  }, */
 ]
