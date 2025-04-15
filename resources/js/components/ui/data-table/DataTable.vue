@@ -41,6 +41,8 @@ import { valueUpdater } from '@/lib/utils'
 
 import { Input } from '@/components/ui/input'
 
+import DataTablePagination from './DataTablePagination.vue'
+
 const props = defineProps<{
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
@@ -136,25 +138,6 @@ const table = useVueTable({
     </Table>
   </div>
   <div class="flex items-center justify-end py-4 space-x-2">
-    <div class="flex-1 text-sm text-muted-foreground">
-        {{ table.getFilteredSelectedRowModel().rows.length }} of
-        {{ table.getFilteredRowModel().rows.length }} row(s) selected.
-      </div>
-      <Button
-        variant="outline"
-        size="sm"
-        :disabled="!table.getCanPreviousPage()"
-        @click="table.previousPage()"
-      >
-        Previous
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        :disabled="!table.getCanNextPage()"
-        @click="table.nextPage()"
-      >
-        Next
-      </Button>
+      <DataTablePagination :table="table" />
     </div>
 </template>
