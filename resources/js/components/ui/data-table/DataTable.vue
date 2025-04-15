@@ -43,6 +43,8 @@ import { Input } from '@/components/ui/input'
 
 import DataTablePagination from './DataTablePagination.vue'
 
+import DataTableViewOptions from './DataTableViewOptions.vue'
+
 const props = defineProps<{
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
@@ -82,23 +84,8 @@ const table = useVueTable({
             <Input class="max-w-sm" placeholder="Filter emails..."
                 :model-value="table.getColumn('email')?.getFilterValue() as string"
                 @update:model-value=" table.getColumn('email')?.setFilterValue($event)" />
-            <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                    <Button variant="outline" class="ml-auto">
-                        Columns
-                        <ChevronDown class="w-4 h-4 ml-2" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuCheckboxItem
-                        v-for="column in table.getAllColumns().filter((column) => column.getCanHide())" :key="column.id"
-                        class="capitalize" :modelValue="column.getIsVisible()" @update:modelValue="(value) => {
-                            column.toggleVisibility(!!value)
-                        }">
-                        {{ column.id }}
-                    </DropdownMenuCheckboxItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+            
+      <DataTableViewOptions :table="table" />
         </div>
   <div class="border rounded-md">
     <Table>
