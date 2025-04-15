@@ -6,7 +6,37 @@ import { ref, watch } from 'vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import { type BreadcrumbItem } from '@/types';
 
-// กำหนด interface สำหรับ User
+import type { Payment } from '@/components/ui/data-table/columns'
+import { onMounted } from 'vue'
+import { columns } from '@/components/ui/data-table/columns'
+import DataTable from '@/components/ui/data-table/DataTable.vue'
+
+const data = ref<Payment[]>([])
+
+async function getData(): Promise<Payment[]> {
+  // Fetch data from your API here.
+  return [
+    {
+        id: '728ed52f',
+        amount: 100,
+        status: 'pending',
+        email: 'm@example.com',
+    },
+    {
+        id: '489e1d42',
+        amount: 125,
+        status: 'processing',
+        email: 'example@gmail.com',
+    },
+    // ...
+  ]
+}
+
+onMounted(async () => {
+  data.value = await getData()
+})
+
+/* // กำหนด interface สำหรับ User
 interface User {
   id: number
   egat_id: string
@@ -51,7 +81,7 @@ const updatePermission = (user: User, permission: string) => {
             }, 3000);
         },
     });
-};
+}; */
 
 const breadcrumbItems: BreadcrumbItem[] = [
     {
@@ -71,63 +101,8 @@ const breadcrumbItems: BreadcrumbItem[] = [
                   title="Permission Management" 
                   description="Manage user permissions and roles within your application." 
                 />
-                
-                <!-- ตารางแสดงรายชื่อผู้ใช้งาน -->
-                <div>
-                    <table class="min-w-full bg-white border">
-                        <thead>
-                            <tr>
-                                <th class="px-4 py-2 border">ID</th>
-                                <th class="px-4 py-2 border">Name</th>
-                                <th class="px-4 py-2 border">can read</th>
-                                <th class="px-4 py-2 border">can create</th>
-                                <th class="px-4 py-2 border">can edit</th>
-                                <th class="px-4 py-2 border">can delete</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(user, index) in localUsers" :key="user.id">
-                                <td class="px-4 py-2 border">{{ user.egat_id }}</td>
-                                <td class="px-4 py-2 border">{{ user.name }}</td>
-                                <!-- Checkbox สำหรับสิทธิ์ต่าง ๆ -->
-                                <td class="px-4 py-2 border text-center">
-                                    <input
-                                        type="checkbox"
-                                        v-model="user.can_read"
-                                        @change="updatePermission(user, 'can_read')"
-                                        class="form-checkbox h-5 w-5 text-blue-600"
-                                    >
-                                </td>
-                                <td class="px-4 py-2 border text-center">
-                                    <input
-                                        type="checkbox"
-                                        v-model="user.can_create"
-                                        @change="updatePermission(user, 'can_create')"
-                                        class="form-checkbox h-5 w-5 text-blue-600"
-                                    >
-                                </td>
-                                <td class="px-4 py-2 border text-center">
-                                    <input
-                                        type="checkbox"
-                                        v-model="user.can_edit"
-                                        @change="updatePermission(user, 'can_edit')"
-                                        class="form-checkbox h-5 w-5 text-blue-600"
-                                    >
-                                </td>
-                                <td class="px-4 py-2 border text-center">
-                                    <input
-                                        type="checkbox"
-                                        v-model="user.can_delete"
-                                        @change="updatePermission(user, 'can_delete')"
-                                        class="form-checkbox h-5 w-5 text-blue-600"
-                                    >
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div v-if="showSuccess" class="fixed bottom-4 right-4 bg-green-500 text-white p-4 rounded-md shadow-lg">
-                        {{ successMessage }}
-                    </div>
+                <div class="container py-10 mx-auto">
+                    <DataTable :columns="columns" :data="data" />
                 </div>
             </div>
         </SettingsLayout>
