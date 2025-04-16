@@ -43,6 +43,13 @@ export const columns: ColumnDef<UserPermission>[] = [
         title: 'Read'
       })
     ),
+    cell: ({ row }) => h(Checkbox, {
+      'modelValue': row.getValue("can_read"),
+      'onUpdate:modelValue': (value) => {
+        // โค้ดสำหรับการอัปเดตค่า
+      },
+      'aria-label': 'Can read permission',
+    }),    
   },
   {
     accessorKey: "can_create",
@@ -52,6 +59,13 @@ export const columns: ColumnDef<UserPermission>[] = [
         title: 'Create'
       })
     ),
+    cell: ({ row }) => h(Checkbox, {
+      'modelValue': row.getValue("can_create"),
+      'onUpdate:modelValue': (value) => {
+        // โค้ดสำหรับการอัปเดตค่า
+      },
+      'aria-label': 'Can create permission',
+    }),    
   },
   {
     accessorKey: "can_edit",
@@ -61,6 +75,13 @@ export const columns: ColumnDef<UserPermission>[] = [
         title: 'Edit'
       })
     ),
+    cell: ({ row }) => h(Checkbox, {
+      'modelValue': row.getValue("can_read"),
+      'onUpdate:modelValue': (value) => {
+        // โค้ดสำหรับการอัปเดตค่า
+      },
+      'aria-label': 'Can edit permission',
+    }),    
   },
   {
     accessorKey: "can_delete",
@@ -70,5 +91,12 @@ export const columns: ColumnDef<UserPermission>[] = [
         title: 'Delete'
       })
     ),
+    cell: ({ row }) => h(Checkbox, {
+      'modelValue': row.getValue("can_delete"),
+      'onUpdate:modelValue': (value) => {
+        // โค้ดสำหรับการอัปเดตค่า
+      },
+      'aria-label': 'Can delete permission',
+    }),    
   },
 ]
