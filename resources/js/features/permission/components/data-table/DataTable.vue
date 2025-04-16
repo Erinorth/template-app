@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="TData, TValue">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { ChevronDown } from 'lucide-vue-next'
 import type {
   ColumnDef,
@@ -48,7 +48,7 @@ import DataTableViewOptions from './DataTableViewOptions.vue'
 const props = defineProps<{
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  meta?: any // เพิ่ม meta เป็น prop
+  meta?: any
 }>()
 
 const sorting = ref<SortingState>([])
@@ -56,6 +56,12 @@ const columnFilters = ref<ColumnFiltersState>([])
 const columnVisibility = ref<VisibilityState>({})
 const rowSelection = ref({})
 const expanded = ref<ExpandedState>({})
+
+const searchQuery = ref('')
+
+watch(searchQuery, (value) => {
+  table.setGlobalFilter(value)
+})
 
 const table = useVueTable({
   // ใช้ getter function แทนการใช้ ref value โดยตรง
@@ -77,17 +83,35 @@ const table = useVueTable({
     get columnVisibility() { return columnVisibility.value },
     get rowSelection() { return rowSelection.value },
     get expanded() { return expanded.value },
+    get globalFilter() { return searchQuery.value }
   },
-  // ส่งผ่าน meta options จาก props
+  globalFilterFn: (row, columnId, filterValue) => {
+    const searchValue = String(filterValue).toLowerCase();
+    const idMatch = String(row.getValue('egat_id')).toLowerCase().includes(searchValue);
+    const nameMatch = String(row.getValue('name') || '').toLowerCase().includes(searchValue);
+    return idMatch || nameMatch;
+  },
   meta: props.meta,
 })
 </script>
 
 <template>
   <div class="flex items-center py-4">
-            <Input class="max-w-sm" placeholder="Filter emails..."
-                :model-value="table.getColumn('egat_id')?.getFilterValue() as string"
-                @update:model-value=" table.getColumn('egat_id')?.setFilterValue($event)" />
+      <Input
+      class="max-w-sm"
+      placeholder="Search ID or Name..."
+      v-model="searchQuery"
+    />
+    <!-- เพิ่มปุ่มล้างการค้นหาถ้าต้องการ -->
+    <Button
+      v-if="searchQuery"
+      variant="ghost"
+      class="ml-2"
+      @click="searchQuery = ''"
+      size="sm"
+    >
+      Clear
+    </Button>
             
       <DataTableViewOptions :table="table" />
         </div>
