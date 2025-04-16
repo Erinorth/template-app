@@ -48,6 +48,7 @@ import DataTableViewOptions from './DataTableViewOptions.vue'
 const props = defineProps<{
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  meta?: any // เพิ่ม meta เป็น prop
 }>()
 
 const sorting = ref<SortingState>([])
@@ -57,18 +58,19 @@ const rowSelection = ref({})
 const expanded = ref<ExpandedState>({})
 
 const table = useVueTable({
+  // ใช้ getter function แทนการใช้ ref value โดยตรง
   get data() { return props.data },
   get columns() { return props.columns },
   getCoreRowModel: getCoreRowModel(),
   getPaginationRowModel: getPaginationRowModel(),
   getSortedRowModel: getSortedRowModel(),
   getExpandedRowModel: getExpandedRowModel(),
+  getFilteredRowModel: getFilteredRowModel(),
   onSortingChange: updaterOrValue => valueUpdater(updaterOrValue, sorting),
   onColumnFiltersChange: updaterOrValue => valueUpdater(updaterOrValue, columnFilters),
   onColumnVisibilityChange: updaterOrValue => valueUpdater(updaterOrValue, columnVisibility),
   onRowSelectionChange: updaterOrValue => valueUpdater(updaterOrValue, rowSelection),
   onExpandedChange: updaterOrValue => valueUpdater(updaterOrValue, expanded),
-  getFilteredRowModel: getFilteredRowModel(),
   state: {
     get sorting() { return sorting.value },
     get columnFilters() { return columnFilters.value },
@@ -76,6 +78,8 @@ const table = useVueTable({
     get rowSelection() { return rowSelection.value },
     get expanded() { return expanded.value },
   },
+  // ส่งผ่าน meta options จาก props
+  meta: props.meta,
 })
 </script>
 

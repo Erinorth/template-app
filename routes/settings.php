@@ -20,6 +20,6 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('settings/Appearance');
     })->name('appearance');
 
-    Route::get('settings/permission', [PermissionController::class, 'edit'])->name('permission.edit');
-    Route::patch('/settings/permission/update', [PermissionController::class, 'update'])->name('settings.permission.update');
+    Route::get('settings/permission', [PermissionController::class, 'permission'])->name('permission');
+    Route::patch('/settings/permission/update', [PermissionController::class, 'update'])->name('permission.update');
 });
