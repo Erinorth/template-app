@@ -6,10 +6,10 @@ import { ref, watch } from 'vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import { type BreadcrumbItem } from '@/types';
 
-import type { Payment } from '@/components/ui/data-table/columns'
+import type { Payment } from '@/components/permission-data-table/columns'
 import { onMounted } from 'vue'
-import { columns } from '@/components/ui/data-table/columns'
-import DataTable from '@/components/ui/data-table/DataTable.vue'
+import { columns } from '@/components/permission-data-table/columns'
+import DataTable from '@/components/permission-data-table/DataTable.vue'
 
 // รับค่า props จาก Inertia
 const props = defineProps<{
