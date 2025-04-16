@@ -16,7 +16,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Data Table',
-        href: '/dashboard',
+        href: '/data_table',
         icon: LayoutGrid,
     },
     {
