@@ -82,8 +82,8 @@ const table = useVueTable({
 <template>
   <div class="flex items-center py-4">
             <Input class="max-w-sm" placeholder="Filter emails..."
-                :model-value="table.getColumn('email')?.getFilterValue() as string"
-                @update:model-value=" table.getColumn('email')?.setFilterValue($event)" />
+                :model-value="table.getColumn('egat_id')?.getFilterValue() as string"
+                @update:model-value=" table.getColumn('egat_id')?.setFilterValue($event)" />
             
       <DataTableViewOptions :table="table" />
         </div>

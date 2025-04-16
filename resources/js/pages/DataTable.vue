@@ -9,7 +9,7 @@ import { useForm } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 
-import type { Permission } from '@/components/permission-data-table/columns'
+import type { Payment } from '@/components/permission-data-table/columns'
 import { onMounted } from 'vue'
 import { columns } from '@/components/permission-data-table/columns'
 import DataTable from '@/components/permission-data-table/DataTable.vue'
@@ -82,7 +82,7 @@ const updatePermission = (user: User, permission: string) => {
     });
 }; */
 
-const breadcrumbItems: BreadcrumbItem[] = [
+const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Data Table',
         href: '/data_table',
@@ -91,12 +91,12 @@ const breadcrumbItems: BreadcrumbItem[] = [
 </script>
 
 <template>
-    <Head title="Data Table" />
+    <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
             <div class="relative min-h-[100vh] flex-1 rounded-xl md:min-h-min">
-                <DataTable :columns="columns" :data="data" />
+               <DataTable :columns="columns" :data="data" />
             </div>
         </div>
     </AppLayout>
