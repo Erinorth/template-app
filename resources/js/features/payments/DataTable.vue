@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="TData, TValue">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { ChevronDown } from 'lucide-vue-next'
 import type {
   ColumnDef,
@@ -48,6 +48,7 @@ import DataTableViewOptions from './DataTableViewOptions.vue'
 const props = defineProps<{
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  meta?: any
 }>()
 
 const sorting = ref<SortingState>([])
@@ -56,38 +57,66 @@ const columnVisibility = ref<VisibilityState>({})
 const rowSelection = ref({})
 const expanded = ref<ExpandedState>({})
 
+const searchQuery = ref('')
+
+watch(searchQuery, (value) => {
+  table.setGlobalFilter(value)
+})
+
 const table = useVueTable({
+  // ใช้ getter function แทนการใช้ ref value โดยตรง
   get data() { return props.data },
   get columns() { return props.columns },
   getCoreRowModel: getCoreRowModel(),
   getPaginationRowModel: getPaginationRowModel(),
   getSortedRowModel: getSortedRowModel(),
   getExpandedRowModel: getExpandedRowModel(),
+  getFilteredRowModel: getFilteredRowModel(),
   onSortingChange: updaterOrValue => valueUpdater(updaterOrValue, sorting),
   onColumnFiltersChange: updaterOrValue => valueUpdater(updaterOrValue, columnFilters),
   onColumnVisibilityChange: updaterOrValue => valueUpdater(updaterOrValue, columnVisibility),
   onRowSelectionChange: updaterOrValue => valueUpdater(updaterOrValue, rowSelection),
   onExpandedChange: updaterOrValue => valueUpdater(updaterOrValue, expanded),
-  getFilteredRowModel: getFilteredRowModel(),
   state: {
     get sorting() { return sorting.value },
     get columnFilters() { return columnFilters.value },
     get columnVisibility() { return columnVisibility.value },
     get rowSelection() { return rowSelection.value },
     get expanded() { return expanded.value },
+    get globalFilter() { return searchQuery.value }
   },
+  globalFilterFn: (row, columnId, filterValue) => {
+    const searchValue = String(filterValue).toLowerCase();
+    const idMatch = String(row.getValue('id')).toLowerCase().includes(searchValue);
+    const emailMatch = String(row.getValue('email') || '').toLowerCase().includes(searchValue);
+    return idMatch || emailMatch;
+  },
+  meta: props.meta,
 })
 </script>
 
 <template>
   <div class="flex items-center py-4">
-            <Input class="max-w-sm" placeholder="Filter emails..."
-                :model-value="table.getColumn('email')?.getFilterValue() as string"
-                @update:model-value=" table.getColumn('email')?.setFilterValue($event)" />
+      <Input
+      class="max-w-sm"
+      placeholder="Search ID or Email..."
+      v-model="searchQuery"
+    />
+    <!-- เพิ่มปุ่มล้างการค้นหาถ้าต้องการ -->
+    <Button
+      v-if="searchQuery"
+      variant="ghost"
+      class="ml-2"
+      @click="searchQuery = ''"
+      size="sm"
+    >
+      Clear
+    </Button>
             
       <DataTableViewOptions :table="table" />
         </div>
   <div class="border rounded-md">
+    
     <Table>
       <TableHeader>
         <TableRow v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
@@ -122,7 +151,9 @@ const table = useVueTable({
           </TableRow>
         </template>
       </TableBody>
+      
     </Table>
+    
   </div>
   <div class="flex items-center justify-end py-4 space-x-2">
       <DataTablePagination :table="table" />

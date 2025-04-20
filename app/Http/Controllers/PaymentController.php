@@ -5,15 +5,21 @@ namespace App\Http\Controllers;
 use App\Models\Payment;
 use App\Http\Requests\StorePaymentRequest;
 use App\Http\Requests\UpdatePaymentRequest;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class PaymentController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(): Response
     {
-        //
+        $payments = Payment::all();
+        
+        return Inertia::render('payments/Payment', [
+            'payments' => $payments
+        ]);
     }
 
     /**
