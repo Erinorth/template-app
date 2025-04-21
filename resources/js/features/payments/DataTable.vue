@@ -41,9 +41,9 @@ import { valueUpdater } from '@/lib/utils'
 
 import { Input } from '@/components/ui/input'
 
-import DataTablePagination from './DataTablePagination.vue'
+import DataTablePagination from '@/components/ui/data-table/DataTablePagination.vue'
 
-import DataTableViewOptions from './DataTableViewOptions.vue'
+import DataTableViewOptions from '@/components/ui/data-table/DataTableViewOptions.vue'
 
 const props = defineProps<{
   columns: ColumnDef<TData, TValue>[]
