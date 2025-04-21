@@ -64,7 +64,6 @@ watch(searchQuery, (value) => {
 })
 
 const table = useVueTable({
-  // ใช้ getter function แทนการใช้ ref value โดยตรง
   get data() { return props.data },
   get columns() { return props.columns },
   getCoreRowModel: getCoreRowModel(),
@@ -102,7 +101,6 @@ const table = useVueTable({
       placeholder="Search ID or Email..."
       v-model="searchQuery"
     />
-    <!-- เพิ่มปุ่มล้างการค้นหาถ้าต้องการ -->
     <Button
       v-if="searchQuery"
       variant="ghost"
