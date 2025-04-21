@@ -1,6 +1,5 @@
 <script setup lang="ts" generic="TData, TValue">
 import { ref, watch } from 'vue'
-import { ChevronDown } from 'lucide-vue-next'
 import type {
   ColumnDef,
   ColumnFiltersState,
@@ -27,13 +26,6 @@ import {
   getExpandedRowModel,
   useVueTable,
 } from '@tanstack/vue-table'
-
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 
 import { Button } from '@/components/ui/button'
 
