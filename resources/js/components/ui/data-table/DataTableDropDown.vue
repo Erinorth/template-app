@@ -1,21 +1,26 @@
+<!-- resources/js/components/ui/data-table/DataTableDropDown.vue -->
 <script setup lang="ts">
+// นำเข้า Button และ DropdownMenu ที่จำเป็น
 import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { MoreHorizontal } from 'lucide-vue-next'
 
+// กำหนด props สำหรับรับรายการเมนูและ label
 defineProps<{
-  payment: {
-    id: string
-  }
+  items: Array<{
+    label: string
+    action: () => void
+    type?: 'item' | 'separator' | 'label'
+  }>
+  label?: string
 }>()
-
-defineEmits<{
-  (e: 'expand'): void
-}>()
-
-function copy(id: string) {
-  navigator.clipboard.writeText(id)
-}
 </script>
 
 <template>
@@ -27,16 +32,14 @@ function copy(id: string) {
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
-      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-      <DropdownMenuItem @click="copy(payment.id)">
-        Copy payment ID
-      </DropdownMenuItem>
-      <DropdownMenuItem @click="$emit('expand')">
-        Expand
-      </DropdownMenuItem>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem>View customer</DropdownMenuItem>
-      <DropdownMenuItem>View payment details</DropdownMenuItem>
+      <DropdownMenuLabel v-if="label">{{ label }}</DropdownMenuLabel>
+      <template v-for="(item, idx) in items" :key="idx">
+        <DropdownMenuSeparator v-if="item.type === 'separator'" />
+        <DropdownMenuItem v-else-if="item.type !== 'label'" @click="item.action">
+          {{ item.label }}
+        </DropdownMenuItem>
+        <DropdownMenuLabel v-else>{{ item.label }}</DropdownMenuLabel>
+      </template>
     </DropdownMenuContent>
   </DropdownMenu>
 </template>
