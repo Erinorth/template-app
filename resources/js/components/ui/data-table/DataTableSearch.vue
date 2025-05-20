@@ -1,33 +1,32 @@
+<!-- resources\js\components\ui\data-table\DataTableSearch.vue -->
 <script setup lang="ts">
-// นำเข้า ref สำหรับ v-model
-import { ref, watch } from 'vue'
-import { Button } from '@/components/ui/button'
+// ใช้ v-model เพื่อให้ reactivity สมบูรณ์
+import { computed } from 'vue'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
-// กำหนด props สำหรับ columns ที่จะค้นหา, v-model:search, และ placeholder
 const props = defineProps<{
   modelValue: string
   columns: string[]
   placeholder?: string
 }>()
+const emit = defineEmits(['update:modelValue'])
 
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void
-}>()
+const internalValue = computed({
+  get: () => props.modelValue,
+  set: (val) => emit('update:modelValue', val)
+})
 
-// ฟังก์ชัน clear ค่าค้นหา
 function clear() {
   emit('update:modelValue', '')
 }
 </script>
-
 <template>
   <div class="flex items-center">
     <Input
       class="max-w-sm"
       :placeholder="placeholder || `Search ${columns.join(' or ')}`"
-      :value="modelValue"
-      @input="emit('update:modelValue', $event.target.value)"
+      v-model="internalValue"
     />
     <Button
       v-if="modelValue"
@@ -40,3 +39,4 @@ function clear() {
     </Button>
   </div>
 </template>
+
