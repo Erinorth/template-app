@@ -8,7 +8,7 @@ import { Head } from '@inertiajs/vue3';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import { type BreadcrumbItem } from '@/types';
 import { columns } from '@/components/tables/permission/columns';
-import DataTable from '@/components/tables/permission/DataTable.vue';
+import DataTable from '@/components/ui/data-table/DataTable.vue';
 import { usePermissionData } from '@/composables/usePermissionData';
 import type { UserPermission } from '@/types/permission';
 import { AlertCircle } from 'lucide-vue-next';
