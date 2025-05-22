@@ -1,7 +1,7 @@
 <!-- 
   ไฟล์: resources\js\pages\settings\permission\PermisionDataTable.vue
   DataTable สำหรับสิทธิ์ผู้ใช้งาน (UserPermission) รองรับ generic, responsive, UX/UI ดี
-  รองรับการเลือกแถว (row selection) แบบ optional โดยควบคุมผ่าน props.hasRowSelection
+  รองรับการเลือกแถว (row selection) แบบ optional 
   ใช้ส่วนประกอบหลัก: Table, DataTablePagination, Input, Button
 -->
 
@@ -44,12 +44,11 @@ import { valueUpdater } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import DataTablePagination from '@/components/ui/data-table/DataTablePagination.vue'
 
-// รับ props: columns, data, meta, hasRowSelection (optional)
+// รับ props: columns, data, meta
 const props = defineProps<{
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   meta?: any
-  hasRowSelection?: boolean
 }>()
 
 // state สำหรับการจัดการตาราง
@@ -88,10 +87,6 @@ const table = useVueTable({
   onSortingChange: updaterOrValue => valueUpdater(updaterOrValue, sorting),
   onColumnFiltersChange: updaterOrValue => valueUpdater(updaterOrValue, columnFilters),
   onColumnVisibilityChange: updaterOrValue => valueUpdater(updaterOrValue, columnVisibility),
-  // เปิด/ปิด row selection ตาม props.hasRowSelection
-  onRowSelectionChange: props.hasRowSelection !== false
-    ? updaterOrValue => valueUpdater(updaterOrValue, rowSelection)
-    : undefined,
   onExpandedChange: updaterOrValue => valueUpdater(updaterOrValue, expanded),
   state: {
     get sorting() { return sorting.value },
@@ -163,6 +158,6 @@ const table = useVueTable({
 
   <!-- ส่วน pagination และ selected info (จะเลือกแสดง DataTableSelected ใน DataTablePagination.vue) -->
   <div class="flex items-center justify-end py-4 space-x-2">
-    <DataTablePagination :table="table" :has-row-selection="props.hasRowSelection !== false" />
+    <DataTablePagination :table="table" />
   </div>
 </template>
