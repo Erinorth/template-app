@@ -27,8 +27,10 @@ Route::get('dashboard', function () {
 
 Route::middleware('auth')->group(function () {
 
-    Route::get('payment', [PaymentController::class, 'index'])
-        ->name('payment.index');
+    // Route สำหรับแสดง Data Table Demo
+    Route::get('/data-table-demo', function () {
+        return Inertia::render('DataTableDemo/DataTableDemo');
+    })->name('data-table.demo');
 
 });
 
