@@ -65,7 +65,7 @@ const formComponentProps = computed(() => {
   if (props.form) {
     return {
       onSubmit: props.form.handleSubmit(val => emits('submit', val)),
-    };
+    }
   }
   else {
     const formSchema = toTypedSchema(props.schema)
@@ -73,7 +73,7 @@ const formComponentProps = computed(() => {
       keepValues: true,
       validationSchema: formSchema,
       onSubmit: (val: GenericObject) => emits('submit', val),
-    };
+    }
   }
 })
 </script>
