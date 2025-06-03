@@ -1,81 +1,16 @@
-<template>
-  <div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <!-- Header -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">ระบบประเมินความเสี่ยง</h1>
-        <p class="mt-2 text-gray-600">ตัวอย่างการแสดงผลข้อมูลด้วย Data Table</p>
-      </div>
-
-      <!-- Tab Navigation -->
-      <div class="mb-6">
-        <nav class="flex space-x-1 bg-white rounded-lg p-1 shadow-sm">
-          <button
-            v-for="tab in tabs"
-            :key="tab.key"
-            @click="activeTab = tab.key"
-            :class="[
-              'px-4 py-2 text-sm font-medium rounded-md transition-colors',
-              activeTab === tab.key
-                ? 'bg-blue-500 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            ]"
-          >
-            <component :is="tab.icon" class="h-4 w-4 inline-block mr-2" />
-            {{ tab.label }}
-          </button>
-        </nav>
-      </div>
-
-      <!-- Data Tables -->
-      <div class="space-y-8">
-        <!-- Risk Assessments Table -->
-        <div v-show="activeTab === 'assessments'" class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">การประเมินความเสี่ยง</h2>
-          <DataTable :config="riskAssessmentsTableConfig" />
-        </div>
-
-        <!-- Organizational Risks Table -->
-        <div v-show="activeTab === 'organizational'" class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">ความเสี่ยงระดับองค์กร</h2>
-          <DataTable :config="organizationalRisksTableConfig" />
-        </div>
-
-        <!-- Division Risks Table -->
-        <div v-show="activeTab === 'division'" class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">ความเสี่ยงระดับแผนก</h2>
-          <DataTable :config="divisionRisksTableConfig" />
-        </div>
-
-        <!-- Criteria Tables -->
-        <div v-show="activeTab === 'criteria'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">เกณฑ์โอกาสเกิด</h2>
-            <DataTable :config="likelihoodCriteriaTableConfig" />
-          </div>
-          
-          <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">เกณฑ์ผลกระทบ</h2>
-            <DataTable :config="impactCriteriaTableConfig" />
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
+<!-- resources/js/pages/DataTableDemo/DataTableDemo.vue -->
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { Head } from '@inertiajs/vue3';
 import { 
   BarChart3, 
   Building2, 
   Users, 
-  Settings,
-  Calendar,
-  AlertTriangle
+  Settings
 } from 'lucide-vue-next';
+import AppLayout from '@/layouts/AppLayout.vue';
 import DataTable from '@/components/ui/data-table2/DataTable.vue';
-import type { TableConfig, TableColumn } from '@/types/risk-assessment';
+import type { BreadcrumbItem, TableConfig, TableColumn } from '@/types';
 import {
   sampleRiskAssessments,
   sampleOrganizationalRisks,
@@ -83,6 +18,14 @@ import {
   sampleLikelihoodCriteria,
   sampleImpactCriteria
 } from '@/lib/sample-data';
+
+// กำหนด breadcrumbs
+const breadcrumbs: BreadcrumbItem[] = [
+  {
+    title: 'ระบบประเมินความเสี่ยง',
+    href: '/data-table-demo',
+  },
+];
 
 // กำหนด active tab
 const activeTab = ref('assessments');
@@ -344,3 +287,71 @@ const impactCriteriaTableConfig = computed((): TableConfig => ({
   emptyMessage: 'ไม่พบข้อมูลเกณฑ์ผลกระทบ'
 }));
 </script>
+
+<template>
+  <Head title="ระบบประเมินความเสี่ยง" />
+
+  <AppLayout :breadcrumbs="breadcrumbs">
+    <div class="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
+      <!-- Header -->
+      <div class="space-y-2">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">ระบบประเมินความเสี่ยง</h1>
+        <p class="text-gray-600 dark:text-gray-400">ตัวอย่างการแสดงผลข้อมูลด้วย Data Table</p>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="w-full">
+        <nav class="flex space-x-1 bg-white dark:bg-gray-800 rounded-lg p-1 shadow-sm border border-gray-200 dark:border-gray-700">
+          <button
+            v-for="tab in tabs"
+            :key="tab.key"
+            @click="activeTab = tab.key"
+            :class="[
+              'px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center',
+              activeTab === tab.key
+                ? 'bg-blue-500 text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            ]"
+          >
+            <component :is="tab.icon" class="h-4 w-4 mr-2" />
+            {{ tab.label }}
+          </button>
+        </nav>
+      </div>
+
+      <!-- Data Tables -->
+      <div class="space-y-6">
+        <!-- Risk Assessments Table -->
+        <div v-show="activeTab === 'assessments'" class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">การประเมินความเสี่ยง</h2>
+          <DataTable :config="riskAssessmentsTableConfig" />
+        </div>
+
+        <!-- Organizational Risks Table -->
+        <div v-show="activeTab === 'organizational'" class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">ความเสี่ยงระดับองค์กร</h2>
+          <DataTable :config="organizationalRisksTableConfig" />
+        </div>
+
+        <!-- Division Risks Table -->
+        <div v-show="activeTab === 'division'" class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">ความเสี่ยงระดับแผนก</h2>
+          <DataTable :config="divisionRisksTableConfig" />
+        </div>
+
+        <!-- Criteria Tables -->
+        <div v-show="activeTab === 'criteria'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">เกณฑ์โอกาสเกิด</h2>
+            <DataTable :config="likelihoodCriteriaTableConfig" />
+          </div>
+          
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">เกณฑ์ผลกระทบ</h2>
+            <DataTable :config="impactCriteriaTableConfig" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </AppLayout>
+</template>
