@@ -29,8 +29,14 @@ Route::middleware('auth')->group(function () {
 
     // Route สำหรับแสดง Data Table Demo
     Route::get('/data-table-demo', function () {
-        return Inertia::render('DataTableDemo/DataTableDemo');
+        return Inertia::render('data_table_demo/DataTable');
     })->name('data-table.demo');
+
+    Route::resource('payments', PaymentController::class);
+    
+    // Route เพิ่มเติมสำหรับเปลี่ยนสถานะ
+    Route::patch('payments/{payment}/status', [PaymentController::class, 'updateStatus'])
+         ->name('payments.update-status');
 
 });
 

@@ -19,6 +19,16 @@ const mainNavItems: NavItem[] = [
         href: '/data-table-demo',
         icon: LayoutGrid,
     },
+    {
+        title: 'Data Table Demo',
+        href: '/data-table-demo',
+        icon: LayoutGrid,
+    },
+    {
+        title: 'Data Table Demo',
+        href: '/data-table-demo',
+        icon: LayoutGrid,
+    },
 ];
 
 const footerNavItems: NavItem[] = [
