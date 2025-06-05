@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class DataTableController extends Controller
+class PermissionController extends Controller
 {
     public function index(Request $request): Response
     {
