@@ -24,11 +24,6 @@ const mainNavItems: NavItem[] = [
         href: '/payments',
         icon: LayoutGrid,
     },
-    {
-        title: 'Data Table Demo3',
-        href: '/payments2',
-        icon: LayoutGrid,
-    },
 ];
 
 const footerNavItems: NavItem[] = [
