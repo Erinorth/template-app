@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\Payment2Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -37,6 +38,8 @@ Route::middleware('auth')->group(function () {
     // Route เพิ่มเติมสำหรับเปลี่ยนสถานะ
     Route::patch('payments/{payment}/status', [PaymentController::class, 'updateStatus'])
          ->name('payments.update-status');
+
+    Route::resource('payments2', Payment2Controller::class);
 
 });
 

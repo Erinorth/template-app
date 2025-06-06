@@ -24,6 +24,11 @@ const mainNavItems: NavItem[] = [
         href: '/payments',
         icon: LayoutGrid,
     },
+    {
+        title: 'Payment2',
+        href: '/payments2',
+        icon: LayoutGrid,
+    },
 ];
 
 const footerNavItems: NavItem[] = [
