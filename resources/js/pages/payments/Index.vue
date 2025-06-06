@@ -96,6 +96,11 @@ import {
   CommandList,
 } from '@/components/ui/command'
 
+// การกำหนด Props สำหรับรับข้อมูลจาก Laravel Controller
+const props = defineProps<{
+  payments: Payment[]
+}>()
+
 // การกำหนด Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -1320,8 +1325,8 @@ const columns: ColumnDef<Payment>[] = [
   }
 ]
 
-// การจัดการข้อมูลและ state
-const data = ref<Payment[]>([])
+// การจัดการข้อมูลและ state - ใช้ข้อมูลจาก props แทน hard data
+const data = ref<Payment[]>(props.payments) // รับข้อมูลจาก props
 const sorting = ref<SortingState>([])
 const columnFilters = ref<ColumnFiltersState>([])
 const columnVisibility = ref<VisibilityState>({})
@@ -1329,38 +1334,6 @@ const rowSelection = ref({})
 const expanded = ref<ExpandedState>({})
 const columnSizing = ref<ColumnSizingState>({})
 const grouping = ref<GroupingState>([])
-
-// ฟังก์ชันดึงข้อมูลพร้อมข้อมูลที่หลากหลายสำหรับการจัดกลุ่ม
-async function getData(): Promise<Payment[]> {
-  return [
-    // การชำระที่เสร็จสิ้นแล้ว
-    { id: '728ed52f', amount: 100, status: 'success', email: 'm@example.com' },
-    { id: '489e1d42', amount: 125, status: 'success', email: 'example@gmail.com' },
-    { id: '629a2f5c', amount: 75, status: 'success', email: 'test@example.com' },
-    { id: '456def78', amount: 150, status: 'success', email: 'user2@example.com' },
-    { id: '345mno67', amount: 175, status: 'success', email: 'user5@example.com' },
-    { id: '234vwx56', amount: 180, status: 'success', email: 'user8@example.com' },
-    
-    // การชำระที่รอดำเนินการ
-    { id: '123abc45', amount: 200, status: 'pending', email: 'user1@example.com' },
-    { id: 'abc123', amount: 50, status: 'pending', email: 'm@example.com' },
-    
-    // การชำระที่กำลังประมวลผล
-    { id: '789ghi91', amount: 85, status: 'processing', email: 'user3@example.com' },
-    { id: '678pqr90', amount: 95, status: 'processing', email: 'user6@example.com' },
-    { id: '567yzab89', amount: 220, status: 'processing', email: 'user9@example.com' },
-    
-    // การชำระที่ล้มเหลว
-    { id: '012jkl34', amount: 300, status: 'failed', email: 'user4@example.com' },
-    { id: '901stu23', amount: 250, status: 'failed', email: 'user7@example.com' },
-    { id: 'ghi789', amount: 1, status: 'failed', email: 'test@example.com' },
-    
-    // เพิ่มข้อมูลที่มีอีเมลซ้ำเพื่อการจัดกลุ่มที่ดีขึ้น
-    { id: 'def456', amount: 999, status: 'success', email: 'example@gmail.com' },
-    { id: 'jkl012', amount: 88, status: 'processing', email: 'user3@example.com' },
-    { id: 'mno345', amount: 77, status: 'pending', email: 'user1@example.com' },
-  ]
-}
 
 // ฟังก์ชันช่วยเหลือสำหรับการรับความกว้างของคอลัมน์
 const getColumnWidth = (columnId: string, defaultSize: number) => {
@@ -1437,21 +1410,26 @@ const table = useVueTable({
   },
 })
 
-// โหลดข้อมูลเมื่อ component ถูกสร้าง
-onMounted(async () => {
+// โหลดข้อมูลเมื่อ component ถูกสร้าง - ปรับปรุงให้ใช้ข้อมูลจาก props
+onMounted(() => {
   try {
-    console.log('Loading data...')
-    data.value = await getData()
-    console.log('Data loaded:', data.value)
+    console.log('Data loaded from props:', data.value)
+    console.log('Data length:', data.value.length)
     
     // แสดง log เพื่อการตรวจสอบ
     toast.success(`โหลดข้อมูลแล้ว: ${data.value.length} รายการ`)
   } catch (error) {
-    console.error('Failed to load data:', error)
-    data.value = []
-    toast.error('ไม่สามารถโหลดข้อมูลได้')
+    console.error('Failed to process data:', error)
+    toast.error('ไม่สามารถประมวลผลข้อมูลได้')
   }
 })
+
+// Watch props changes และอัพเดทข้อมูลเมื่อ props เปลี่ยน
+watch(() => props.payments, (newPayments) => {
+  data.value = newPayments
+  console.log('Data updated from props:', newPayments.length, 'items')
+  toast.info(`อัพเดทข้อมูล: ${newPayments.length} รายการ`)
+}, { immediate: true })
 </script>
 
 <template>
