@@ -17,3 +17,16 @@ export function valueUpdater<T extends Updater<any>>(
       ? updaterOrValue(ref.value)
       : updaterOrValue
 }
+
+// ฟังก์ชันสำหรับ copy ข้อความ
+export function copyToClipboard(text: string): Promise<void> {
+  return navigator.clipboard.writeText(text)
+}
+
+// ฟังก์ชันสำหรับ format currency
+export function formatCurrency(amount: number, currency = 'USD'): string {
+  return new Intl.NumberFormat('th-TH', {
+    style: 'currency',
+    currency,
+  }).format(amount)
+}

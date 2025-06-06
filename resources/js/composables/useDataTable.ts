@@ -1,108 +1,105 @@
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue'
+import { useVueTable, getCoreRowModel, getPaginationRowModel, getSortedRowModel, getFilteredRowModel, getExpandedRowModel, getFacetedRowModel, getFacetedUniqueValues, getFacetedMinMaxValues, getGroupedRowModel } from '@tanstack/vue-table'
+import { valueUpdater } from '@/lib/utils'
+import { statusMultiSelectFilter, amountRangeFilter } from '@/lib/table-utils'
+import type { TableConfig, SortingState, ColumnFiltersState, VisibilityState, ExpandedState, GroupingState, ColumnSizingState } from '@/types/table'
+import { toast } from 'vue-sonner'
 
-export interface UseDataTableOptions<T = any> {
-  data: T[];
-  searchableFields?: (keyof T)[];
-  defaultSort?: {
-    field: keyof T;
-    direction: 'asc' | 'desc';
-  };
-  pageSize?: number;
-}
+// Composable สำหรับจัดการ Data Table
+export function useDataTable<T>(config: TableConfig<T>) {
+  // State management
+  const sorting = ref<SortingState>([])
+  const columnFilters = ref<ColumnFiltersState>([])
+  const columnVisibility = ref<VisibilityState>({})
+  const rowSelection = ref({})
+  const expanded = ref<ExpandedState>({})
+  const columnSizing = ref<ColumnSizingState>({})
+  const grouping = ref<GroupingState>([])
 
-export function useDataTable<T = any>(options: UseDataTableOptions<T>) {
-  // รีแอคทีฟ สเตต
-  const searchQuery = ref('');
-  const sortField = ref<keyof T | null>(options.defaultSort?.field || null);
-  const sortDirection = ref<'asc' | 'desc'>(options.defaultSort?.direction || 'asc');
-  const currentPage = ref(1);
-  const pageSize = ref(options.pageSize || 10);
+  // การตั้งค่าตาราง
+  const table = useVueTable({
+    get data() { return config.data },
+    get columns() { return config.columns },
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+    getFacetedMinMaxValues: getFacetedMinMaxValues(),
+    getGroupedRowModel: getGroupedRowModel(),
+    enableColumnResizing: config.enableColumnResizing ?? true,
+    columnResizeMode: 'onChange',
+    columnResizeDirection: 'ltr',
+    enableColumnFilters: config.enableFiltering ?? true,
+    enableGrouping: config.enableGrouping ?? true,
+    groupedColumnMode: 'reorder',
+    filterFns: {
+      statusMultiSelect: statusMultiSelectFilter,
+      amountRange: amountRangeFilter,
+    },
+    onSortingChange: updaterOrValue => valueUpdater(updaterOrValue, sorting),
+    onColumnFiltersChange: updaterOrValue => valueUpdater(updaterOrValue, columnFilters),
+    onColumnVisibilityChange: updaterOrValue => valueUpdater(updaterOrValue, columnVisibility),
+    onRowSelectionChange: updaterOrValue => valueUpdater(updaterOrValue, rowSelection),
+    onExpandedChange: updaterOrValue => valueUpdater(updaterOrValue, expanded),
+    onColumnSizingChange: updaterOrValue => valueUpdater(updaterOrValue, columnSizing),
+    onGroupingChange: updaterOrValue => valueUpdater(updaterOrValue, grouping),
+    state: {
+      get sorting() { return sorting.value },
+      get columnFilters() { return columnFilters.value },
+      get columnVisibility() { return columnVisibility.value },
+      get rowSelection() { return rowSelection.value },
+      get expanded() { return expanded.value },
+      get columnSizing() { return columnSizing.value },
+      get grouping() { return grouping.value },
+    },
+  })
 
-  // ฟิลเตอร์ข้อมูลตามการค้นหา
-  const filteredData = computed(() => {
-    if (!searchQuery.value) return options.data;
+  // ฟังก์ชันช่วยเหลือ
+  const getColumnWidth = (columnId: string, defaultSize: number) => {
+    return columnSizing.value[columnId] || defaultSize
+  }
 
-    const query = searchQuery.value.toLowerCase();
-    return options.data.filter(item => {
-      if (options.searchableFields) {
-        return options.searchableFields.some(field => {
-          const value = item[field];
-          return String(value).toLowerCase().includes(query);
-        });
-      } else {
-        return Object.values(item as any).some(value =>
-          String(value).toLowerCase().includes(query)
-        );
-      }
-    });
-  });
-
-  // เรียงลำดับข้อมูล
-  const sortedData = computed(() => {
-    if (!sortField.value) return filteredData.value;
-
-    return [...filteredData.value].sort((a, b) => {
-      const aValue = a[sortField.value!];
-      const bValue = b[sortField.value!];
-
-      let comparison = 0;
-      if (aValue > bValue) comparison = 1;
-      if (aValue < bValue) comparison = -1;
-
-      return sortDirection.value === 'desc' ? -comparison : comparison;
-    });
-  });
-
-  // คำนวณข้อมูลสำหรับ pagination
-  const totalItems = computed(() => sortedData.value.length);
-  const totalPages = computed(() => Math.ceil(totalItems.value / pageSize.value));
-
-  // ข้อมูลที่แสดงในหน้าปัจจุบัน
-  const paginatedData = computed(() => {
-    const start = (currentPage.value - 1) * pageSize.value;
-    const end = start + pageSize.value;
-    return sortedData.value.slice(start, end);
-  });
-
-  // ฟังก์ชันสำหรับเรียงลำดับ
-  const handleSort = (field: keyof T) => {
-    if (sortField.value === field) {
-      sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
-    } else {
-      sortField.value = field;
-      sortDirection.value = 'asc';
+  const clearAllFilters = () => {
+    try {
+      table.resetColumnFilters()
+      toast.info('ล้างตัวกรองทั้งหมดแล้ว')
+    } catch (error) {
+      console.warn('Clear filters failed:', error)
     }
-  };
+  }
 
-  // ฟังก์ชันสำหรับเปลี่ยนหน้า
-  const goToPage = (page: number) => {
-    if (page >= 1 && page <= totalPages.value) {
-      currentPage.value = page;
+  // Computed properties
+  const activeFiltersCount = computed(() => {
+    try {
+      return columnFilters.value.length
+    } catch {
+      return 0
     }
-  };
+  })
 
-  // รีเซ็ตหน้าเมื่อมีการค้นหาหรือเปลี่ยนขนาดหน้า
-  watch([searchQuery, pageSize], () => {
-    currentPage.value = 1;
-  });
+  const activeGroupingCount = computed(() => {
+    try {
+      return grouping.value.length
+    } catch {
+      return 0
+    }
+  })
 
   return {
-    // States
-    searchQuery,
-    sortField,
-    sortDirection,
-    currentPage,
-    pageSize,
-    
-    // Computed
-    filteredData,
-    sortedData,
-    paginatedData,
-    totalItems,
-    totalPages,
-    
-    // Methods
-    handleSort,
-    goToPage
-  };
+    table,
+    sorting,
+    columnFilters,
+    columnVisibility,
+    rowSelection,
+    expanded,
+    columnSizing,
+    grouping,
+    getColumnWidth,
+    clearAllFilters,
+    activeFiltersCount,
+    activeGroupingCount
+  }
 }
