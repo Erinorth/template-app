@@ -20,7 +20,7 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Data Table Demo2',
+        title: 'Payment',
         href: '/payments',
         icon: LayoutGrid,
     },
