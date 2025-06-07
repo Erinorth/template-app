@@ -69,11 +69,6 @@ const { selectedValues, facetedValues, toggleValue, clearFilter } = useStatusFil
             @click="toggleValue(option.value)"
           >
             <div class="flex items-center space-x-3">
-              <Checkbox
-                :id="`status-${option.value}`"
-                :checked="selectedValues.includes(option.value)"
-                @update:checked="toggleValue(option.value)"
-              />
               <label
                 :for="`status-${option.value}`"
                 class="text-sm font-normal cursor-pointer select-none"
