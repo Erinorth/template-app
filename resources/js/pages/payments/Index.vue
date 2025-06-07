@@ -1,3 +1,4 @@
+<!-- resources\js\pages\payments\Index.vue -->
 <script setup lang="ts">
 import { h, onMounted, ref, computed, watch } from 'vue'
 import type { 
