@@ -56,6 +56,9 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import { Head } from '@inertiajs/vue3'
 import type { BreadcrumbItem } from '@/types'
 
+// Import StatusFilter component แทนการเขียน inline
+import StatusFilter from '@/components/data-table/StatusFilter.vue'
+
 import {
   Table,
   TableBody,
@@ -134,12 +137,6 @@ interface Payment {
 }
 
 // Interface สำหรับ Filter Options
-interface StatusOption {
-  value: string
-  label: string
-  count: number
-}
-
 interface EmailSuggestion {
   value: string
   count: number
@@ -200,175 +197,6 @@ function safeGetSubRows(row: any): any[] {
   } catch {
     return []
   }
-}
-
-// StatusFilter Component ที่ปรับปรุงแล้ว
-const StatusFilter = (props: { column: Column<Payment, any> }) => {
-  // ใช้ reactive ref และ sync กับ column filter value
-  const selectedValues = ref<string[]>([])
-  
-  // ใช้ watch แทน onMounted เพื่อหลีกเลี่ยง lifecycle issue
-  watch(() => props.column.getFilterValue(), (newValue) => {
-    if (Array.isArray(newValue)) {
-      selectedValues.value = [...newValue]
-    } else {
-      selectedValues.value = []
-    }
-    console.log('Column filter changed to:', selectedValues.value)
-  }, { immediate: true })
-  
-  // ปรับปรุง faceted values ให้แสดงผลดีขึ้น
-  const facetedValues = computed((): StatusOption[] => {
-    try {
-      const uniqueValues = props.column.getFacetedUniqueValues()
-      if (uniqueValues && uniqueValues.size > 0) {
-        return Array.from(uniqueValues.entries()).map(([value, count]: [string, number]) => ({
-          value: value as string,
-          label: (value as string).charAt(0).toUpperCase() + (value as string).slice(1),
-          count: count as number
-        })).sort((a, b) => a.label.localeCompare(b.label))
-      } else {
-        // Fallback ถ้าไม่มี faceted values
-        return [
-          { value: 'pending', label: 'Pending', count: 0 },
-          { value: 'processing', label: 'Processing', count: 0 },
-          { value: 'success', label: 'Success', count: 0 },
-          { value: 'failed', label: 'Failed', count: 0 },
-        ]
-      }
-    } catch (error) {
-      console.warn('Error getting faceted values:', error)
-      return [
-        { value: 'pending', label: 'Pending', count: 0 },
-        { value: 'processing', label: 'Processing', count: 0 },
-        { value: 'success', label: 'Success', count: 0 },
-        { value: 'failed', label: 'Failed', count: 0 },
-      ]
-    }
-  })
-  
-  // ปรับปรุงฟังก์ชัน toggleValue
-  const toggleValue = (value: string) => {
-    console.log('Toggle value called:', value)
-    
-    const currentValues = [...selectedValues.value]
-    const index = currentValues.indexOf(value)
-    
-    if (index > -1) {
-      // ลบค่าออก
-      currentValues.splice(index, 1)
-    } else {
-      // เพิ่มค่าเข้าไป
-      currentValues.push(value)
-    }
-    
-    selectedValues.value = currentValues
-    
-    // ส่งค่าไปยัง column filter
-    const filterValue = currentValues.length > 0 ? currentValues : undefined
-    console.log('Setting filter value:', filterValue)
-    
-    props.column.setFilterValue(filterValue)
-    
-    // แสดง toast notification
-    if (currentValues.length > 0) {
-      toast.success(`กรองสถานะ: ${currentValues.join(', ')}`)
-    } else {
-      toast.info('ยกเลิกการกรองสถานะ')
-    }
-  }
-
-  // ปรับปรุงฟังก์ชัน clearFilter
-  const clearFilter = () => {
-    console.log('Clear filter called')
-    selectedValues.value = []
-    props.column.setFilterValue(undefined)
-    toast.info('ล้างการกรองสถานะทั้งหมด')
-  }
-
-  return h(Popover, {}, {
-    default: () => [
-      h(PopoverTrigger, { asChild: true }, {
-        default: () => h(Button, {
-          variant: selectedValues.value.length > 0 ? 'default' : 'outline',
-          size: 'sm',
-          class: 'h-8'
-        }, {
-          default: () => [
-            h(Filter, { class: 'w-4 h-4 mr-2' }),
-            'สถานะ',
-            selectedValues.value.length > 0 ? h(Badge, {
-              variant: 'secondary',
-              class: 'ml-2 rounded-sm px-1 font-normal'
-            }, { default: () => selectedValues.value.length.toString() }) : null
-          ]
-        })
-      }),
-      h(PopoverContent, { class: 'w-[280px] p-0', align: 'start' }, {
-        default: () => h('div', { class: 'p-4 space-y-3' }, [
-          // Header พร้อม Clear button
-          h('div', { class: 'flex items-center justify-between' }, [
-            h('h4', { class: 'font-medium text-sm' }, 'กรองตามสถานะ'),
-            selectedValues.value.length > 0 ? h(Button, {
-              variant: 'ghost',
-              size: 'sm',
-              onClick: clearFilter,
-              class: 'h-auto p-1 text-muted-foreground hover:text-foreground'
-            }, { 
-              default: () => [
-                h(X, { class: 'w-3 h-3 mr-1' }),
-                'ล้าง'
-              ]
-            }) : null
-          ]),
-          
-          // Status options
-          h('div', { class: 'space-y-2' }, 
-            facetedValues.value.map((option: StatusOption) => 
-              h('div', { 
-                key: option.value,
-                class: 'flex items-center justify-between space-x-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer',
-                onClick: () => toggleValue(option.value)
-              }, [
-                h('div', { class: 'flex items-center space-x-3' }, [
-                  h(Checkbox, {
-                    id: `status-${option.value}`,
-                    checked: selectedValues.value.includes(option.value),
-                    'onUpdate:checked': () => toggleValue(option.value)
-                  }),
-                  h('label', { 
-                    for: `status-${option.value}`,
-                    class: 'text-sm font-normal cursor-pointer select-none'
-                  }, option.label)
-                ]),
-                h('span', { 
-                  class: 'text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full'
-                }, option.count.toString())
-              ])
-            )
-          ),
-          
-          // แสดงสถานะที่เลือกอยู่
-          selectedValues.value.length > 0 ? h('div', { 
-            class: 'pt-2 mt-2 border-t text-xs text-muted-foreground' 
-          }, [
-            h('span', {}, `กำลังกรอง: ${selectedValues.value.length} สถานะ`),
-            h('div', { class: 'flex flex-wrap gap-1 mt-1' }, 
-              selectedValues.value.map(value => 
-                h(Badge, {
-                  key: value,
-                  variant: 'secondary',
-                  class: 'text-xs px-1.5 py-0.5'
-                }, { 
-                  default: () => facetedValues.value.find(f => f.value === value)?.label || value 
-                })
-              )
-            )
-          ]) : null
-        ])
-      })
-    ]
-  })
 }
 
 // Enhanced Amount Range Filter Component พร้อม Faceted Min/Max
@@ -576,25 +404,6 @@ const EmailAutocompleteFilter = (props: { column: Column<Payment, any> }) => {
 
 // Grouping Controls Component
 const GroupingControls = (props: { table: any }) => {
-  const availableColumns = computed(() => {
-    try {
-      return props.table.getAllColumns()
-        .filter((column: any) => {
-          try {
-            return column.getCanGroup && column.getCanGroup()
-          } catch {
-            return false
-          }
-        })
-        .map((column: any) => ({
-          id: column.id,
-          label: column.columnDef.header || column.id
-        }))
-    } catch {
-      return []
-    }
-  })
-
   const currentGrouping = computed(() => {
     try {
       return props.table.getState().grouping || []
@@ -602,24 +411,6 @@ const GroupingControls = (props: { table: any }) => {
       return []
     }
   })
-
-  const toggleGrouping = (columnId: string) => {
-    try {
-      const current = [...currentGrouping.value]
-      const index = current.indexOf(columnId)
-      
-      if (index > -1) {
-        current.splice(index, 1)
-      } else {
-        current.push(columnId)
-      }
-      
-      props.table.setGrouping(current)
-      toast.success(`จัดกลุ่มโดย: ${current.join(', ') || 'ไม่มี'}`)
-    } catch (error) {
-      console.warn('Grouping toggle failed:', error)
-    }
-  }
 
   const clearAllGrouping = () => {
     try {
@@ -1459,7 +1250,7 @@ watch(() => props.payments, (newPayments) => {
 
         <!-- แถวตัวกรองขั้นสูงและการจัดกลุ่ม -->
         <div class="flex items-center gap-4 flex-wrap">
-          <!-- Enhanced Status Filter พร้อม Faceted Values -->
+          <!-- ใช้ StatusFilter component ที่ import มา -->
           <StatusFilter :column="table.getColumn('status')!" />
           
           <!-- Enhanced Amount Range Filter พร้อม Faceted Min/Max -->
