@@ -100,6 +100,12 @@ import {
   CommandList,
 } from '@/components/ui/command'
 
+import {
+  safeGetIsGrouped,
+  safeGetIsAggregated,
+  safeGetSubRows,
+} from '@/lib/table-utils'
+
 // การกำหนด Props สำหรับรับข้อมูลจาก Laravel Controller
 const props = defineProps<{
   payments: Payment[]
@@ -172,31 +178,6 @@ const amountRangeFilter: FilterFn<Payment> = (row, columnId, filterValue: Amount
   if (filterValue.min !== undefined && cellValue < filterValue.min) return false
   if (filterValue.max !== undefined && cellValue > filterValue.max) return false
   return true
-}
-
-// ฟังก์ชันช่วยเหลือสำหรับการตรวจสอบแถวอย่างปลอดภัย
-function safeGetIsGrouped(row: any): boolean {
-  try {
-    return row.getIsGrouped && typeof row.getIsGrouped === 'function' ? row.getIsGrouped() : false
-  } catch {
-    return false
-  }
-}
-
-function safeGetIsAggregated(row: any): boolean {
-  try {
-    return row.getIsAggregated && typeof row.getIsAggregated === 'function' ? row.getIsAggregated() : false
-  } catch {
-    return false
-  }
-}
-
-function safeGetSubRows(row: any): any[] {
-  try {
-    return row.subRows || []
-  } catch {
-    return []
-  }
 }
 
 // Enhanced Amount Range Filter Component พร้อม Faceted Min/Max
