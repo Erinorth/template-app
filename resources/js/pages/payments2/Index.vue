@@ -110,6 +110,11 @@ import {
   cn,
   valueUpdater,
 } from '@/lib/utils'
+import {
+  Payment,
+  EmailSuggestion,
+  AmountFilter,
+} from '@/types/payments'
 
 // การกำหนด Props สำหรับรับข้อมูลจาก Laravel Controller
 const props = defineProps<{
@@ -127,25 +132,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     href: '/payments',
   },
 ]
-
-// การกำหนด Type definitions
-interface Payment {
-  id: string
-  amount: number
-  status: 'pending' | 'processing' | 'success' | 'failed'
-  email: string
-}
-
-// Interface สำหรับ Filter Options
-interface EmailSuggestion {
-  value: string
-  count: number
-}
-
-interface AmountFilter {
-  min?: number
-  max?: number
-}
 
 // Enhanced Amount Range Filter Component พร้อม Faceted Min/Max
 const AmountRangeFilter = (props: { column: Column<Payment, any> }) => {
