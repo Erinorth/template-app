@@ -99,12 +99,15 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-
 import {
   safeGetIsGrouped,
   safeGetIsAggregated,
   safeGetSubRows,
 } from '@/lib/table-utils'
+import {
+  cn,
+  valueUpdater,
+} from '@/lib/utils'
 
 // การกำหนด Props สำหรับรับข้อมูลจาก Laravel Controller
 const props = defineProps<{
@@ -122,17 +125,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     href: '/payments',
   },
 ]
-
-// ฟังก์ชัน Utility
-function cn(...inputs: any[]) {
-  return twMerge(clsx(inputs))
-}
-
-function valueUpdater<T extends Updater<any>>(updaterOrValue: T, ref: Ref) {
-  ref.value = typeof updaterOrValue === 'function'
-    ? updaterOrValue(ref.value)
-    : updaterOrValue
-}
 
 // การกำหนด Type definitions
 interface Payment {
