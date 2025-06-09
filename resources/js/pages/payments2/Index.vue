@@ -58,6 +58,7 @@ import type { BreadcrumbItem } from '@/types'
 
 // Import StatusFilter component แทนการเขียน inline
 import StatusFilter from '@/components/data-table/StatusFilter.vue'
+import AmountRangeFilter from '@/components/data-table/AmountRangeFilter.vue'
 
 import {
   Table,
@@ -132,106 +133,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     href: '/payments',
   },
 ]
-
-// Enhanced Amount Range Filter Component พร้อม Faceted Min/Max
-const AmountRangeFilter = (props: { column: Column<Payment, any> }) => {
-  const filterValue = ref<AmountFilter>(props.column.getFilterValue() as AmountFilter || {})
-  
-  const facetedMinMax = computed(() => {
-    try {
-      const minMax = props.column.getFacetedMinMaxValues()
-      return minMax ? [minMax[0], minMax[1]] : [0, 1000]
-    } catch {
-      return [0, 1000]
-    }
-  })
-  
-  const updateFilter = () => {
-    const hasValues = filterValue.value.min !== undefined || filterValue.value.max !== undefined
-    props.column.setFilterValue(hasValues ? { ...filterValue.value } : undefined)
-    
-    if (hasValues) {
-      toast.success(`กรองจำนวน: $${filterValue.value.min || 0} - $${filterValue.value.max || 'ไม่จำกัด'}`)
-    }
-  }
-
-  const clearFilter = () => {
-    filterValue.value = {}
-    props.column.setFilterValue(undefined)
-    toast.info('ล้างการกรองจำนวนเงิน')
-  }
-
-  const hasFilter = computed(() => {
-    return filterValue.value.min !== undefined || filterValue.value.max !== undefined
-  })
-
-  return h(Popover, {}, {
-    default: () => [
-      h(PopoverTrigger, { asChild: true }, {
-        default: () => h(Button, {
-          variant: hasFilter.value ? 'default' : 'outline',
-          size: 'sm',
-          class: 'h-8'
-        }, {
-          default: () => [
-            h(Filter, { class: 'w-4 h-4 mr-2' }),
-            'จำนวน',
-            hasFilter.value ? h(Badge, {
-              variant: 'secondary',
-              class: 'ml-2 rounded-sm px-1 font-normal'
-            }, { default: () => '•' }) : null
-          ]
-        })
-      }),
-      h(PopoverContent, { class: 'w-[320px] p-0', align: 'start' }, {
-        default: () => h('div', { class: 'p-4 space-y-4' }, [
-          h('div', { class: 'flex items-center justify-between' }, [
-            h('h4', { class: 'font-medium text-sm' }, 'กรองตามจำนวนเงิน'),
-            hasFilter.value ? h(Button, {
-              variant: 'ghost',
-              size: 'sm',
-              onClick: clearFilter,
-              class: 'h-auto p-1'
-            }, { default: () => h(X, { class: 'w-3 h-3' }) }) : null
-          ]),
-          h('div', { class: 'text-xs text-muted-foreground mb-2' }, [
-            `ช่วง: $${facetedMinMax.value[0]} - $${facetedMinMax.value[1]}`
-          ]),
-          h('div', { class: 'grid grid-cols-2 gap-2' }, [
-            h('div', { class: 'space-y-2' }, [
-              h('label', { class: 'text-xs text-muted-foreground' }, 'จำนวนขั้นต่ำ'),
-              h(Input, {
-                type: 'number',
-                placeholder: `${facetedMinMax.value[0]}`,
-                min: facetedMinMax.value[0],
-                max: facetedMinMax.value[1],
-                value: filterValue.value.min?.toString() || '',
-                'onUpdate:modelValue': (value: string | number) => {
-                  filterValue.value.min = value ? Number(value) : undefined
-                  updateFilter()
-                }
-              })
-            ]),
-            h('div', { class: 'space-y-2' }, [
-              h('label', { class: 'text-xs text-muted-foreground' }, 'จำนวนสูงสุด'),
-              h(Input, {
-                type: 'number',
-                placeholder: `${facetedMinMax.value[1]}`,
-                min: facetedMinMax.value[0],
-                max: facetedMinMax.value[1],
-                value: filterValue.value.max?.toString() || '',
-                'onUpdate:modelValue': (value: string | number) => {
-                  filterValue.value.max = value ? Number(value) : undefined
-                  updateFilter()
-                }
-              })
-            ])
-          ])
-        ])
-      })
-    ]
-  })
-}
 
 // Enhanced Email Filter พร้อม Autocomplete โดยใช้ Faceted Values
 const EmailAutocompleteFilter = (props: { column: Column<Payment, any> }) => {
