@@ -103,6 +103,8 @@ import {
   safeGetIsGrouped,
   safeGetIsAggregated,
   safeGetSubRows,
+  statusMultiSelectFilter,
+  amountRangeFilter,
 } from '@/lib/table-utils'
 import {
   cn,
@@ -143,33 +145,6 @@ interface EmailSuggestion {
 interface AmountFilter {
   min?: number
   max?: number
-}
-
-// Custom filter functions ที่ปรับปรุงแล้ว
-const statusMultiSelectFilter: FilterFn<Payment> = (row, columnId, filterValue: string[]) => {
-  console.log('Status filter called:', { 
-    cellValue: row.getValue(columnId), 
-    filterValue 
-  })
-  
-  // ถ้าไม่มี filter value หรือเป็น array ว่าง ให้แสดงทุกแถว
-  if (!filterValue || !Array.isArray(filterValue) || filterValue.length === 0) {
-    return true
-  }
-  
-  const cellValue = row.getValue(columnId) as string
-  const result = filterValue.includes(cellValue)
-  
-  console.log('Filter result:', result)
-  return result
-}
-
-const amountRangeFilter: FilterFn<Payment> = (row, columnId, filterValue: AmountFilter) => {
-  if (!filterValue) return true
-  const cellValue = Number.parseFloat(row.getValue(columnId) as string)
-  if (filterValue.min !== undefined && cellValue < filterValue.min) return false
-  if (filterValue.max !== undefined && cellValue > filterValue.max) return false
-  return true
 }
 
 // Enhanced Amount Range Filter Component พร้อม Faceted Min/Max
