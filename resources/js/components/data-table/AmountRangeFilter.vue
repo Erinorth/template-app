@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Column } from '@tanstack/vue-table'
 import type { Payment } from '@/types/payment'
+import type { AmountFilter } from '@/types/payment'
 import { useAmountRangeFilter } from '@/composables/useTableFilters'
-import { DollarSign, X } from 'lucide-vue-next'
+import { Filter, X } from 'lucide-vue-next'
+import { toast } from 'vue-sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,7 +23,37 @@ interface Props {
 const props = defineProps<Props>()
 
 // ใช้ composable สำหรับจัดการ amount range filter
-const { filterValue, facetedMinMax, updateFilter, clearFilter, hasFilter } = useAmountRangeFilter(props.column)
+const { filterValue, facetedMinMax, hasFilter } = useAmountRangeFilter(props.column)
+
+// Enhanced update filter function พร้อม toast notification
+const updateFilter = () => {
+  const hasValues = filterValue.value.min !== undefined || filterValue.value.max !== undefined
+  props.column.setFilterValue(hasValues ? { ...filterValue.value } : undefined)
+  
+  if (hasValues) {
+    const minText = filterValue.value.min ? `$${filterValue.value.min}` : '$0'
+    const maxText = filterValue.value.max ? `$${filterValue.value.max}` : 'ไม่จำกัด'
+    toast.success(`กรองจำนวน: ${minText} - ${maxText}`)
+  }
+}
+
+// Enhanced clear filter function พร้อม toast notification
+const clearFilter = () => {
+  filterValue.value = {}
+  props.column.setFilterValue(undefined)
+  toast.info('ล้างการกรองจำนวนเงิน')
+}
+
+// Handle input updates พร้อม validation
+const handleMinUpdate = (value: string | number) => {
+  filterValue.value.min = value ? Number(value) : undefined
+  updateFilter()
+}
+
+const handleMaxUpdate = (value: string | number) => {
+  filterValue.value.max = value ? Number(value) : undefined
+  updateFilter()
+}
 </script>
 
 <template>
@@ -29,22 +62,22 @@ const { filterValue, facetedMinMax, updateFilter, clearFilter, hasFilter } = use
       <Button
         :variant="hasFilter ? 'default' : 'outline'"
         size="sm"
-        class="h-8 justify-start"
+        class="h-8"
       >
-        <DollarSign class="w-4 h-4 mr-2" />
-        จำนวนเงิน
+        <Filter class="w-4 h-4 mr-2" />
+        จำนวน
         <Badge
           v-if="hasFilter"
           variant="secondary"
           class="ml-2 rounded-sm px-1 font-normal"
         >
-          1
+          •
         </Badge>
       </Button>
     </PopoverTrigger>
-    <PopoverContent class="w-80 p-0" align="start">
+    <PopoverContent class="w-[320px] p-0" align="start">
       <div class="p-4 space-y-4">
-        <!-- Header -->
+        <!-- Header พร้อมปุ่มล้าง -->
         <div class="flex items-center justify-between">
           <h4 class="font-medium text-sm">กรองตามจำนวนเงิน</h4>
           <Button
@@ -52,62 +85,66 @@ const { filterValue, facetedMinMax, updateFilter, clearFilter, hasFilter } = use
             variant="ghost"
             size="sm"
             @click="clearFilter"
-            class="h-auto p-1 text-muted-foreground hover:text-foreground"
+            class="h-auto p-1"
           >
-            <X class="w-3 h-3 mr-1" />
-            ล้าง
+            <X class="w-3 h-3" />
           </Button>
         </div>
 
-        <!-- Range Info -->
-        <div class="text-xs text-muted-foreground">
+        <!-- แสดงช่วงข้อมูลที่มีอยู่ -->
+        <div class="text-xs text-muted-foreground mb-2">
           ช่วง: ${{ facetedMinMax[0] }} - ${{ facetedMinMax[1] }}
         </div>
 
-        <!-- Min Amount Input -->
-        <div class="space-y-2">
-          <label class="text-xs font-medium">จำนวนขั้นต่ำ</label>
-          <div class="relative">
-            <DollarSign class="absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              v-model.number="filterValue.min"
-              type="number"
-              :placeholder="`${facetedMinMax[0]}`"
-              class="pl-8 h-8 text-sm"
-              :min="facetedMinMax[0]"
-              :max="facetedMinMax[1]"
-              @input="updateFilter"
-            />
+        <!-- Input fields แบบ 2 คอลัมน์ -->
+        <div class="grid grid-cols-2 gap-2">
+          <!-- จำนวนขั้นต่ำ -->
+          <div class="space-y-2">
+            <label class="text-xs text-muted-foreground">จำนวนขั้นต่ำ</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+              <Input
+                type="number"
+                :placeholder="`${facetedMinMax[0]}`"
+                :min="facetedMinMax[0]"
+                :max="facetedMinMax[1]"
+                :value="filterValue.min?.toString() || ''"
+                @update:model-value="handleMinUpdate"
+                class="pl-7"
+              />
+            </div>
+          </div>
+
+          <!-- จำนวนสูงสุด -->
+          <div class="space-y-2">
+            <label class="text-xs text-muted-foreground">จำนวนสูงสุด</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+              <Input
+                type="number"
+                :placeholder="`${facetedMinMax[1]}`"
+                :min="facetedMinMax[0]"
+                :max="facetedMinMax[1]"
+                :value="filterValue.max?.toString() || ''"
+                @update:model-value="handleMaxUpdate"
+                class="pl-7"
+              />
+            </div>
           </div>
         </div>
 
-        <!-- Max Amount Input -->
-        <div class="space-y-2">
-          <label class="text-xs font-medium">จำนวนสูงสุด</label>
-          <div class="relative">
-            <DollarSign class="absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              v-model.number="filterValue.max"
-              type="number"
-              :placeholder="`${facetedMinMax[1]}`"
-              class="pl-8 h-8 text-sm"
-              :min="facetedMinMax[0]"
-              :max="facetedMinMax[1]"
-              @input="updateFilter"
-            />
-          </div>
-        </div>
-
-        <!-- Current Filter Display -->
+        <!-- แสดงสถานะการกรองปัจจุบัน -->
         <div
           v-if="hasFilter"
           class="pt-2 mt-2 border-t text-xs text-muted-foreground"
         >
-          <span>กำลังกรอง: </span>
-          <span class="font-medium">
-            ${{ filterValue.min || facetedMinMax[0] }} - 
-            ${{ filterValue.max || facetedMinMax[1] }}
-          </span>
+          <div class="flex items-center justify-between">
+            <span>กำลังกรอง:</span>
+            <span class="font-medium">
+              ${{ filterValue.min || facetedMinMax[0] }} - 
+              ${{ filterValue.max || facetedMinMax[1] }}
+            </span>
+          </div>
         </div>
       </div>
     </PopoverContent>
