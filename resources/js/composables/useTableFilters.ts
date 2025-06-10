@@ -3,53 +3,59 @@ import type { Column } from '@tanstack/vue-table'
 import type { Payment, StatusOption, EmailSuggestion, AmountFilter } from '@/types/payment'
 import { toast } from 'vue-sonner'
 
-// Composable สำหรับจัดการ Status Filter
+// ใช้ function เดียวจาก useTableFilters.ts แทนการมีไฟล์แยก
 export function useStatusFilter(column: Column<Payment, any>) {
   const selectedValues = ref<string[]>([])
   
-  // ใช้ watch แทน onMounted เพื่อหลีกเลี่ยง lifecycle issue
+  // Watch column filter changes
   watch(() => column.getFilterValue(), (newValue) => {
     if (Array.isArray(newValue)) {
       selectedValues.value = [...newValue]
     } else {
       selectedValues.value = []
     }
-    console.log('Column filter changed to:', selectedValues.value)
   }, { immediate: true })
   
-  // ปรับปรุง faceted values ให้แสดงผลดีขึ้น
   const facetedValues = computed((): StatusOption[] => {
     try {
       const uniqueValues = column.getFacetedUniqueValues()
       if (uniqueValues && uniqueValues.size > 0) {
         return Array.from(uniqueValues.entries()).map(([value, count]: [string, number]) => ({
           value: value as string,
-          label: (value as string).charAt(0).toUpperCase() + (value as string).slice(1),
+          label: getStatusLabel(value as string),
           count: count as number
         })).sort((a, b) => a.label.localeCompare(b.label))
       } else {
-        // Fallback ถ้าไม่มี faceted values
         return [
-          { value: 'pending', label: 'Pending', count: 0 },
-          { value: 'processing', label: 'Processing', count: 0 },
-          { value: 'success', label: 'Success', count: 0 },
-          { value: 'failed', label: 'Failed', count: 0 },
+          { value: 'pending', label: 'รอดำเนินการ', count: 0 },
+          { value: 'processing', label: 'กำลังประมวลผล', count: 0 },
+          { value: 'success', label: 'สำเร็จ', count: 0 },
+          { value: 'failed', label: 'ล้มเหลว', count: 0 },
         ]
       }
     } catch (error) {
       console.warn('Error getting faceted values:', error)
       return [
-        { value: 'pending', label: 'Pending', count: 0 },
-        { value: 'processing', label: 'Processing', count: 0 },
-        { value: 'success', label: 'Success', count: 0 },
-        { value: 'failed', label: 'Failed', count: 0 },
+        { value: 'pending', label: 'รอดำเนินการ', count: 0 },
+        { value: 'processing', label: 'กำลังประมวลผล', count: 0 },
+        { value: 'success', label: 'สำเร็จ', count: 0 },
+        { value: 'failed', label: 'ล้มเหลว', count: 0 },
       ]
     }
   })
+
+  // Helper function สำหรับแปลง status เป็นภาษาไทย
+  const getStatusLabel = (status: string): string => {
+    const labels: Record<string, string> = {
+      pending: 'รอดำเนินการ',
+      processing: 'กำลังประมวลผล',
+      success: 'สำเร็จ',
+      failed: 'ล้มเหลว'
+    }
+    return labels[status] || status.charAt(0).toUpperCase() + status.slice(1)
+  }
   
   const toggleValue = (value: string) => {
-    console.log('Toggle value called:', value)
-    
     const currentValues = [...selectedValues.value]
     const index = currentValues.indexOf(value)
     
@@ -60,21 +66,17 @@ export function useStatusFilter(column: Column<Payment, any>) {
     }
     
     selectedValues.value = currentValues
-    
     const filterValue = currentValues.length > 0 ? currentValues : undefined
-    console.log('Setting filter value:', filterValue)
-    
     column.setFilterValue(filterValue)
     
     if (currentValues.length > 0) {
-      toast.success(`กรองสถานะ: ${currentValues.join(', ')}`)
+      toast.success(`กรองสถานะ: ${currentValues.map(v => getStatusLabel(v)).join(', ')}`)
     } else {
       toast.info('ยกเลิกการกรองสถานะ')
     }
   }
 
   const clearFilter = () => {
-    console.log('Clear filter called')
     selectedValues.value = []
     column.setFilterValue(undefined)
     toast.info('ล้างการกรองสถานะทั้งหมด')
@@ -88,7 +90,6 @@ export function useStatusFilter(column: Column<Payment, any>) {
   }
 }
 
-// Composable สำหรับจัดการ Amount Range Filter
 export function useAmountRangeFilter(column: Column<Payment, any>) {
   const filterValue = ref<AmountFilter>(column.getFilterValue() as AmountFilter || {})
   
@@ -129,7 +130,6 @@ export function useAmountRangeFilter(column: Column<Payment, any>) {
   }
 }
 
-// Composable สำหรับจัดการ Email Autocomplete Filter
 export function useEmailAutocompleteFilter(column: Column<Payment, any>) {
   const open = ref(false)
   const inputValue = ref(column.getFilterValue() as string || '')
