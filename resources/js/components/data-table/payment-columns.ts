@@ -12,7 +12,7 @@ import DropdownAction from './DropdownAction.vue'
 
 export function createPaymentColumns(): ColumnDef<Payment>[] {
   return [
-    // คอลัมน์ Payment ID พร้อมปุ่มขยาย
+    // คอลัมน์ Payment ID - ลดขนาดลงเพราะ ID สั้น + ปุ่มสามเหลี่ยม
     {
       accessorKey: 'id',
       header: ({ column, header, table }) => h(DataTableColumnHeader, {
@@ -71,14 +71,14 @@ export function createPaymentColumns(): ColumnDef<Payment>[] {
         }
         
         // แถวปกติ - แสดง Payment ID พร้อมปุ่มขยาย
-        return h('div', { class: 'flex items-center gap-2' }, [
+        return h('div', { class: 'flex items-center gap-1' }, [
           // ปุ่มสามเหลี่ยมสำหรับขยาย/ย่อแถว
           h(Button, {
             variant: 'ghost',
             size: 'sm',
-            class: 'h-6 w-6 p-0 hover:bg-muted',
+            class: 'h-5 w-5 p-0 hover:bg-muted',
             onClick: (event: Event) => {
-              event.stopPropagation() // ป้องกันไม่ให้ trigger row selection
+              event.stopPropagation()
               try {
                 row.toggleExpanded()
               } catch (error) {
@@ -98,19 +98,19 @@ export function createPaymentColumns(): ColumnDef<Payment>[] {
             }
           }),
           // แสดง Payment ID
-          h('span', { class: 'font-mono text-sm' }, `#${row.getValue('id')}`)
+          h('span', { class: 'font-mono text-xs' }, `#${row.getValue('id')}`)
         ])
       },
-      size: 150, // เพิ่มขนาดเพื่อรองรับปุ่ม
-      minSize: 120,
-      maxSize: 220,
+      size: 130, // ลดจาก 150 เป็น 130
+      minSize: 110, // ลดจาก 120 เป็น 110
+      maxSize: 180, // ลดจาก 220 เป็น 180
       enableResizing: true,
       enableColumnFilter: true,
       enableGrouping: false,
       aggregationFn: 'count',
     },
 
-    // คอลัมน์สถานะ
+    // คอลัมน์สถานะ - ลดขนาดลงเพราะ badge เล็ก
     {
       accessorKey: 'status',
       header: ({ column, header, table }) => h(DataTableColumnHeader, {
@@ -126,7 +126,7 @@ export function createPaymentColumns(): ColumnDef<Payment>[] {
             const subRows = safeGetSubRows(row)
             return h('div', { class: 'flex items-center' }, [
               h(StatusBadge, { status }),
-              h('span', { class: 'ml-2 text-sm text-muted-foreground' }, 
+              h('span', { class: 'ml-2 text-xs text-muted-foreground' }, 
                 `(${subRows.length})`
               )
             ])
@@ -145,9 +145,9 @@ export function createPaymentColumns(): ColumnDef<Payment>[] {
           return h('span', { class: 'text-sm text-muted-foreground' }, 'ไม่ทราบ')
         }
       },
-      size: 120,
-      minSize: 100,
-      maxSize: 180,
+      size: 100, // ลดจาก 120 เป็น 100
+      minSize: 85, // ลดจาก 100 เป็น 85
+      maxSize: 140, // ลดจาก 180 เป็น 140
       enableResizing: true,
       enableColumnFilter: true,
       filterFn: statusMultiSelectFilter,
@@ -155,7 +155,7 @@ export function createPaymentColumns(): ColumnDef<Payment>[] {
       aggregationFn: 'count',
     },
 
-    // คอลัมน์จำนวนเงิน
+    // คอลัมน์จำนวนเงิน - เพิ่มขนาดเล็กน้อย
     {
       accessorKey: 'amount',
       header: ({ column, header, table }) => h(DataTableColumnHeader, {
@@ -172,17 +172,17 @@ export function createPaymentColumns(): ColumnDef<Payment>[] {
 
           return h('div', { 
             class: cn(
-              'text-right',
-              safeGetIsGrouped(row) || safeGetIsAggregated(row) ? 'font-bold' : 'font-medium'
+              'text-right text-sm font-medium',
+              safeGetIsGrouped(row) || safeGetIsAggregated(row) ? 'font-bold' : ''
             )
           }, formatted)
         } catch {
-          return h('div', { class: 'text-right font-medium' }, '$0.00')
+          return h('div', { class: 'text-right font-medium text-sm' }, '$0.00')
         }
       },
-      size: 120,
-      minSize: 100,
-      maxSize: 200,
+      size: 130, // เพิ่มจาก 120 เป็น 130
+      minSize: 110, // เพิ่มจาก 100 เป็น 110
+      maxSize: 180, // ลดจาก 200 เป็น 180
       enableResizing: true,
       enableColumnFilter: true,
       filterFn: amountRangeFilter,
@@ -190,7 +190,7 @@ export function createPaymentColumns(): ColumnDef<Payment>[] {
       aggregationFn: 'sum',
     },
 
-    // คอลัมน์อีเมล
+    // คอลัมน์อีเมล - เพิ่มขนาดให้แสดงข้อมูลได้เต็ม
     {
       accessorKey: 'email',
       header: ({ column, header, table }) => h(DataTableColumnHeader, {
@@ -205,8 +205,8 @@ export function createPaymentColumns(): ColumnDef<Payment>[] {
             const subRows = safeGetSubRows(row)
             const email = row.getValue('email') as string
             return h('div', { class: 'flex items-center' }, [
-              h('span', { class: 'font-medium' }, email),
-              h('span', { class: 'ml-2 text-sm text-muted-foreground' }, 
+              h('span', { class: 'font-medium truncate' }, email),
+              h('span', { class: 'ml-2 text-xs text-muted-foreground flex-shrink-0' }, 
                 `(${subRows.length})`
               )
             ])
@@ -227,21 +227,24 @@ export function createPaymentColumns(): ColumnDef<Payment>[] {
         }
         
         try {
-          return h('div', { class: 'lowercase truncate' }, row.getValue('email') as string)
+          return h('div', { 
+            class: 'lowercase truncate text-sm',
+            title: row.getValue('email') as string // แสดง tooltip เมื่อ hover
+          }, row.getValue('email') as string)
         } catch {
-          return h('div', { class: 'lowercase truncate' }, 'unknown@email.com')
+          return h('div', { class: 'lowercase truncate text-sm' }, 'unknown@email.com')
         }
       },
-      size: 250,
-      minSize: 150,
-      maxSize: 400,
+      size: 300, // เพิ่มจาก 250 เป็น 300
+      minSize: 180, // เพิ่มจาก 150 เป็น 180
+      maxSize: 450, // เพิ่มจาก 400 เป็น 450
       enableResizing: true,
       enableColumnFilter: true,
       enableGrouping: true,
       aggregationFn: 'count',
     },
 
-    // คอลัมน์การดำเนินการ (ไม่มี expand แล้ว)
+    // คอลัมน์การดำเนินการ - คงเดิม
     {
       id: 'actions',
       enableHiding: false,
@@ -254,18 +257,15 @@ export function createPaymentColumns(): ColumnDef<Payment>[] {
           const payment = row.original
 
           return h('div', { class: 'flex justify-center' }, 
-            h(DropdownAction, { 
-              payment
-              // ลบ onExpand ออกแล้วเพราะย้ายไปใช้ที่ปุ่มสามเหลี่ยม
-            })
+            h(DropdownAction, { payment })
           )
         } catch {
           return null
         }
       },
-      size: 80,
-      minSize: 80,
-      maxSize: 80,
+      size: 60, // ลดจาก 80 เป็น 60
+      minSize: 60,
+      maxSize: 60,
     }
   ]
 }
