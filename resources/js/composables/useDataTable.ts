@@ -5,9 +5,8 @@ import { statusMultiSelectFilter, amountRangeFilter } from '@/lib/table-utils'
 import type { TableConfig, SortingState, ColumnFiltersState, VisibilityState, ExpandedState, GroupingState, ColumnSizingState } from '@/types/table'
 import { toast } from 'vue-sonner'
 
-// Composable สำหรับจัดการ Data Table
 export function useDataTable<T>(config: TableConfig<T>) {
-  // State management
+  // สถานะตาราง
   const sorting = ref<SortingState>([])
   const columnFilters = ref<ColumnFiltersState>([])
   const columnVisibility = ref<VisibilityState>({})
@@ -16,7 +15,7 @@ export function useDataTable<T>(config: TableConfig<T>) {
   const columnSizing = ref<ColumnSizingState>({})
   const grouping = ref<GroupingState>([])
 
-  // การตั้งค่าตาราง
+  // สร้างตาราง
   const table = useVueTable({
     get data() { return config.data },
     get columns() { return config.columns },
@@ -57,7 +56,7 @@ export function useDataTable<T>(config: TableConfig<T>) {
     },
   })
 
-  // ฟังก์ชันช่วยเหลือ
+  // ฟังก์ชันเสริม
   const getColumnWidth = (columnId: string, defaultSize: number) => {
     return columnSizing.value[columnId] || defaultSize
   }
@@ -71,7 +70,6 @@ export function useDataTable<T>(config: TableConfig<T>) {
     }
   }
 
-  // Computed properties
   const activeFiltersCount = computed(() => {
     try {
       return columnFilters.value.length

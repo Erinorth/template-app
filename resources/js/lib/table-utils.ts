@@ -1,7 +1,7 @@
 import type { FilterFn } from '@tanstack/vue-table'
 import type { Payment, AmountFilter } from '@/types/payment'
 
-// ฟังก์ชันช่วยเหลือสำหรับการตรวจสอบแถวอย่างปลอดภัย
+// Helper functions สำหรับจัดการ row states อย่างปลอดภัย
 export function safeGetIsGrouped(row: any): boolean {
   try {
     return row.getIsGrouped && typeof row.getIsGrouped === 'function' ? row.getIsGrouped() : false
@@ -26,22 +26,14 @@ export function safeGetSubRows(row: any): any[] {
   }
 }
 
-// Custom filter functions
+// Filter functions ที่ปรับปรุงแล้ว - ลบ console.log ซ้ำซ้อน
 export const statusMultiSelectFilter: FilterFn<Payment> = (row, columnId, filterValue: string[]) => {
-  console.log('Status filter called:', { 
-    cellValue: row.getValue(columnId), 
-    filterValue 
-  })
-  
   if (!filterValue || !Array.isArray(filterValue) || filterValue.length === 0) {
     return true
   }
   
   const cellValue = row.getValue(columnId) as string
-  const result = filterValue.includes(cellValue)
-  
-  console.log('Filter result:', result)
-  return result
+  return filterValue.includes(cellValue)
 }
 
 export const amountRangeFilter: FilterFn<Payment> = (row, columnId, filterValue: AmountFilter) => {

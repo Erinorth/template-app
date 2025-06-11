@@ -1,19 +1,16 @@
 import { h } from 'vue'
 import type { ColumnDef } from '@tanstack/vue-table'
 import type { Payment } from '@/types/payment'
-import { safeGetIsGrouped, safeGetIsAggregated, safeGetSubRows } from '@/lib/table-utils'
+import { safeGetIsGrouped, safeGetIsAggregated, safeGetSubRows, statusMultiSelectFilter, amountRangeFilter } from '@/lib/table-utils'
 import { formatCurrency, cn } from '@/lib/utils'
-import { statusMultiSelectFilter, amountRangeFilter } from '@/lib/table-utils'
 
-// Import components
 import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
+import { Plus, Minus } from 'lucide-vue-next'
 import DataTableColumnHeader from './DataTableColumnHeader.vue'
 import StatusBadge from './StatusBadge.vue'
 import DropdownAction from './DropdownAction.vue'
-import { Button } from '@/components/ui/button'
-import { Plus, Minus } from 'lucide-vue-next'
 
-// ฟังก์ชันสำหรับสร้าง columns definition
 export function createPaymentColumns(): ColumnDef<Payment>[] {
   return [
     // Select Column

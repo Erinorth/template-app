@@ -3,11 +3,9 @@ import type { Column } from '@tanstack/vue-table'
 import type { Payment, StatusOption, EmailSuggestion, AmountFilter } from '@/types/payment'
 import { toast } from 'vue-sonner'
 
-// ใช้ function เดียวจาก useTableFilters.ts แทนการมีไฟล์แยก
 export function useStatusFilter(column: Column<Payment, any>) {
   const selectedValues = ref<string[]>([])
   
-  // Watch column filter changes
   watch(() => column.getFilterValue(), (newValue) => {
     if (Array.isArray(newValue)) {
       selectedValues.value = [...newValue]
@@ -44,7 +42,6 @@ export function useStatusFilter(column: Column<Payment, any>) {
     }
   })
 
-  // Helper function สำหรับแปลง status เป็นภาษาไทย
   const getStatusLabel = (status: string): string => {
     const labels: Record<string, string> = {
       pending: 'รอดำเนินการ',
