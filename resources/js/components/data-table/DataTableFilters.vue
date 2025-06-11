@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import StatusFilter from './StatusFilter.vue'
 import AmountRangeFilter from './AmountRangeFilter.vue'
-import EmailAutocompleteFilter from './EmailAutocompleteFilter.vue'
+import EmailFilter from './EmailFilter.vue'
 
 // Props definition
 interface Props {
@@ -145,7 +145,7 @@ const clearGrouping = () => {
             <label class="text-xs font-medium text-muted-foreground mb-2 block">
               กรองตามอีเมล
             </label>
-            <EmailAutocompleteFilter :column="emailColumn" />
+            <EmailFilter :column="emailColumn" />
           </div>
         </div>
       </div>

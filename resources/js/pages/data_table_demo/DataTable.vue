@@ -466,7 +466,7 @@ const AmountRangeFilter = (props: { column: Column<Payment, any> }) => {
 }
 
 // Enhanced Email Filter พร้อม Autocomplete โดยใช้ Faceted Values
-const EmailAutocompleteFilter = (props: { column: Column<Payment, any> }) => {
+const EmailFilter = (props: { column: Column<Payment, any> }) => {
   const open = ref(false)
   const inputValue = ref(props.column.getFilterValue() as string || '')
   
@@ -1464,7 +1464,7 @@ onMounted(async () => {
         <!-- แถวตัวกรองหลัก -->
         <div class="flex items-center gap-4 flex-wrap">
           <!-- Enhanced Email Filter พร้อม Autocomplete -->
-          <EmailAutocompleteFilter :column="table.getColumn('email')!" />
+          <EmailFilter :column="table.getColumn('email')!" />
           
           <!-- ID Filter -->
           <Input 
