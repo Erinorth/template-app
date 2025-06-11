@@ -5,6 +5,7 @@ import { toast } from 'vue-sonner'
 
 // Layout และ Navigation imports
 import AppLayout from '@/layouts/AppLayout.vue'
+import Title from '@/components/Title.vue'
 import type { BreadcrumbItem } from '@/types'
 
 // Data Table imports
@@ -148,6 +149,25 @@ onMounted(() => {
 
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+      <!-- Header Section -->
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <Title 
+          title="จัดการการชำระเงิน"
+          subtitle="ระบบจัดการข้อมูลการชำระเงินทั้งหมด"
+          description="ดู แก้ไข และจัดการข้อมูลการชำระเงินของลูกค้าทั้งหมดในระบบ"
+          badge-variant="secondary"
+          size="lg"
+        />
+        
+        <!-- Action Buttons -->
+        <div class="flex items-center gap-3">
+          <Button @click="addNewPayment">
+            <Plus class="w-4 h-4 mr-2" />
+            เพิ่มการชำระเงิน
+          </Button>
+        </div>
+      </div>
+      
       <!-- Enhanced Controls Section พร้อม Multiple Filters และ Grouping -->
       <div class="flex flex-col gap-4">
         <!-- แถวตัวกรองหลัก -->
