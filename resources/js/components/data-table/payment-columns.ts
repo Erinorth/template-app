@@ -237,7 +237,7 @@ export function createPaymentColumns(): ColumnDef<Payment>[] {
       aggregationFn: 'count',
     },
 
-    // Actions Column
+    // Actions Column - ปรับให้ไม่แสดงสำหรับ grouped rows
     {
       id: 'actions',
       enableHiding: false,
@@ -245,6 +245,7 @@ export function createPaymentColumns(): ColumnDef<Payment>[] {
       enableGrouping: false,
       header: () => h('div', { class: 'text-center' }, 'การกระทำ'),
       cell: ({ row }) => {
+        // ไม่แสดง actions สำหรับ grouped หรือ aggregated rows
         if (safeGetIsGrouped(row) || safeGetIsAggregated(row)) return null
         
         try {

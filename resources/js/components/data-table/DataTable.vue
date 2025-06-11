@@ -88,9 +88,9 @@ const table = props.table ? props.table : tableInstance
               </TableCell>
             </TableRow>
             
-            <!-- แถวขยาย (หาก expanded) -->
+            <!-- แถวขยาย (เฉพาะ row ปกติเท่านั้น ไม่ใช่ grouped/aggregated rows) -->
             <TableRow 
-              v-if="row.getIsExpanded && row.getIsExpanded()"
+              v-if="row.getIsExpanded && row.getIsExpanded() && !safeGetIsGrouped(row) && !safeGetIsAggregated(row)"
               class="bg-muted/10"
             >
               <TableCell 
@@ -99,7 +99,7 @@ const table = props.table ? props.table : tableInstance
               >
                 <div class="bg-card rounded-lg p-4 border">
                   <h4 class="font-medium text-sm mb-2 text-muted-foreground">
-                    รายละเอียดเพิ่มเติม
+                    รายละเอียดการชำระเงิน
                   </h4>
                   <pre class="text-xs bg-muted p-2 rounded overflow-auto">{{ JSON.stringify(row.original, null, 2) }}</pre>
                 </div>
