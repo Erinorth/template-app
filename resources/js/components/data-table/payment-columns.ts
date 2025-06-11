@@ -4,7 +4,6 @@ import type { Payment } from '@/types/payment'
 import { safeGetIsGrouped, safeGetIsAggregated, safeGetSubRows, statusMultiSelectFilter, amountRangeFilter } from '@/lib/table-utils'
 import { formatCurrency, cn } from '@/lib/utils'
 
-import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Plus, Minus } from 'lucide-vue-next'
 import DataTableColumnHeader from './DataTableColumnHeader.vue'
@@ -13,33 +12,7 @@ import DropdownAction from './DropdownAction.vue'
 
 export function createPaymentColumns(): ColumnDef<Payment>[] {
   return [
-    // Select Column
-    {
-      id: 'select',
-      header: ({ table }) => h(Checkbox, {
-        'modelValue': table.getIsAllPageRowsSelected(),
-        'onUpdate:modelValue': (value: boolean | 'indeterminate') => table.toggleAllPageRowsSelected(!!value),
-        'ariaLabel': 'เลือกทั้งหมด',
-      }),
-      cell: ({ row }) => {
-        if (safeGetIsGrouped(row)) return null
-        
-        return h(Checkbox, {
-          'modelValue': row.getIsSelected(),
-          'onUpdate:modelValue': (value: boolean | 'indeterminate') => row.toggleSelected(!!value),
-          'ariaLabel': 'เลือกแถว',
-        })
-      },
-      enableSorting: false,
-      enableHiding: false,
-      enableResizing: false,
-      enableGrouping: false,
-      size: 50,
-      minSize: 50,
-      maxSize: 50,
-    },
-    
-    // ID Column
+    // ID Column (ลบ Select Column ออก)
     {
       accessorKey: 'id',
       header: ({ column, header, table }) => h(DataTableColumnHeader, {
@@ -237,15 +210,13 @@ export function createPaymentColumns(): ColumnDef<Payment>[] {
       aggregationFn: 'count',
     },
 
-    // Actions Column - ปรับให้ไม่แสดงสำหรับ grouped rows
+    // Actions Column
     {
       id: 'actions',
       enableHiding: false,
       enableResizing: false,
       enableGrouping: false,
-      header: () => h('div', { class: 'text-center' }, 'การกระทำ'),
       cell: ({ row }) => {
-        // ไม่แสดง actions สำหรับ grouped หรือ aggregated rows
         if (safeGetIsGrouped(row) || safeGetIsAggregated(row)) return null
         
         try {
