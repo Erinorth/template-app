@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { Head } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3' // เพิ่ม router import
 import { toast } from 'vue-sonner'
 
 // Layout และ Navigation imports
@@ -142,6 +142,11 @@ onMounted(() => {
     toast.error('ไม่สามารถประมวลผลข้อมูลได้')
   }
 })
+
+// แก้ไขฟังก์ชัน addNewPayment ให้ใช้ router
+const addNewPayment = () => {
+  router.visit('/payments2/create')
+}
 </script>
 
 <template>
