@@ -1,77 +1,36 @@
-// resources/js/components/tables/permission/columns.ts
-
 import { h } from 'vue'
 import { ColumnDef } from '@tanstack/vue-table'
 import { Checkbox } from '@/components/ui/checkbox'
-import DataTableColumnHeader from '@/components/ui/data-table/DataTableColumnHeader.vue'
-import DataTableDropDown from '@/components/ui/data-table/DataTableDropDown.vue'
+import DataTableColumnHeader from '@/components/data-table/DataTableColumnHeader.vue'
 import type { UserPermission } from '@/types/permission'
 import { toast } from 'vue-sonner'
 
-/**
- * ขยายคำนิยาม TableMeta เพื่อเพิ่ม updateData method
- */
+// ประกาศ module สำหรับ table meta
 declare module '@tanstack/table-core' {
   interface TableMeta<TData> {
     updateData: (id: string | number, key: string, value: boolean) => void
   }
 }
 
-/**
- * สร้างคอลัมน์ checkbox สำหรับเลือกแถว (select row)
- */
-const createRowSelectionColumn = (): ColumnDef<UserPermission> => ({
-  id: 'select',
-  header: ({ table }) =>
-    // Checkbox สำหรับเลือกทุกแถวในหน้านั้น
-    h(Checkbox, {
-      'aria-label': 'เลือกทั้งหมด',
-      'modelValue': table.getIsAllPageRowsSelected(),
-      'indeterminate': table.getIsSomePageRowsSelected(),
-      'onUpdate:modelValue': (value: boolean | 'indeterminate') => {
-        if (typeof value === 'boolean') {
-          table.toggleAllPageRowsSelected(value)
-        }
-      },
-      class: 'mx-auto',
-    }),
-  cell: ({ row }) =>
-    // Checkbox สำหรับเลือกแถวเดียว
-    h(Checkbox, {
-      'aria-label': 'เลือกแถว',
-      'modelValue': row.getIsSelected(),
-      'indeterminate': row.getIsSomeSelected && row.getIsSomeSelected(),
-      'onUpdate:modelValue': (value: boolean | 'indeterminate') => {
-        if (typeof value === 'boolean') {
-          row.toggleSelected(value)
-        }
-      },
-      class: 'mx-auto',
-    }),
-  size: 32, // กำหนดความกว้างคอลัมน์สำหรับ checkbox
-  enableSorting: false,
-  enableHiding: false,
-})
+// สร้าง type helper สำหรับ ColumnDef เพื่อหลีกเลี่ยง TypeScript error
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type GenericColumnDef<T> = ColumnDef<T, any>
 
-/**
- * สร้างคอลัมน์ข้อความ (สำหรับข้อมูลทั่วไป)
- */
+
+// สร้างคอลัมน์ข้อความ
 const createTextColumn = (key: 'egat_id' | 'name', title: string): ColumnDef<UserPermission> => ({
   accessorKey: key,
   header: ({ column }) => h(DataTableColumnHeader, { column, title })
 })
 
-/**
- * สร้างคอลัมน์สำหรับการจัดการสิทธิ์ด้วย checkbox
- */
-const createPermissionColumn = (permission: 'view' | 'create' | 'update' | 'delete'): ColumnDef<UserPermission> => ({
+// สร้างคอลัมน์สิทธิ์
+const createPermissionColumn = (permission: 'view' | 'create' | 'update' | 'delete'): GenericColumnDef<UserPermission> => ({
   accessorKey: permission,
   header: ({ column }) => h(DataTableColumnHeader, {
     column,
     title: permission.charAt(0).toUpperCase() + permission.slice(1)
   }),
   cell: ({ row, table }) => {
-    // แปลงค่าให้เป็น boolean เสมอ
     const value = Boolean(row.getValue(permission))
     return h(Checkbox, {
       'modelValue': value,
@@ -92,63 +51,13 @@ const createPermissionColumn = (permission: 'view' | 'create' | 'update' | 'dele
   }
 })
 
-/**
- * สร้างคอลัมน์ action dropdown สำหรับแต่ละแถว
- */
-const createActionColumn = (): ColumnDef<UserPermission> => ({
-  id: 'actions',
-  header: '', // ไม่แสดงหัวคอลัมน์
-  cell: ({ row }) =>
-    h(DataTableDropDown, {
-      // ส่ง items (array) สำหรับเมนู dropdown
-      items: [
-        {
-          label: 'Actions',
-          type: 'label',
-          action: () => {},
-        },
-        {
-          label: 'Copy EGAT ID',
-          action: () => {
-            navigator.clipboard.writeText(row.original.egat_id)
-            toast.success('คัดลอก EGAT ID เรียบร้อย')
-          },
-        },
-        {
-          label: 'Copy Name',
-          action: () => {
-            navigator.clipboard.writeText(row.original.name)
-            toast.success('คัดลอกชื่อเรียบร้อย')
-          },
-        },
-        {
-          type: 'separator',
-          label: '',
-          action: () => {},
-        },
-        {
-          label: 'View User',
-          action: () => toast.info(`ดูข้อมูลผู้ใช้: ${row.original.name}`),
-        },
-        {
-          label: 'View Permissions',
-          action: () => toast.info(`ดูสิทธิ์ของผู้ใช้: ${row.original.name}`),
-        },
-      ],
-      label: 'Actions',
-    })
-})
-
-/**
- * กำหนดคอลัมน์ทั้งหมดสำหรับตารางแสดงสิทธิ์ผู้ใช้งาน
- */
+// ส่งออกคอลัมน์ทั้งหมด - ใช้ GenericColumnDef แทน ColumnDef
 export const columns: ColumnDef<UserPermission>[] = [
-  //createRowSelectionColumn(), // เพิ่มคอลัมน์ checkbox สำหรับเลือกแถว
+  // สร้างคอลัมน์ข้อมูลพื้นฐาน
   createTextColumn('egat_id', 'ID'),
   createTextColumn('name', 'Name'),
   createPermissionColumn('view'),
   createPermissionColumn('create'),
   createPermissionColumn('update'),
   createPermissionColumn('delete'),
-  //createActionColumn(), // เพิ่มคอลัมน์ dropdown action
 ]
