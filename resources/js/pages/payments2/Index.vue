@@ -10,8 +10,8 @@ import type { BreadcrumbItem } from '@/types'
 
 // Data Table imports
 import { useDataTable } from '@/composables/useDataTable'
-import { createPaymentColumns } from '@/components/data-table/payment-columns'
-import DataTable from '@/components/data-table/DataTable.vue'
+import { createPaymentColumns } from '@/pages/payments2/data-table/payment-columns'
+import DataTable from '@/pages/payments2/data-table/DataTable.vue'
 import DataTablePagination from '@/components/data-table/DataTablePagination.vue'
 
 // Filter Components
