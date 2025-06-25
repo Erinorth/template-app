@@ -4,8 +4,8 @@
 import { ref, watch } from 'vue'
 
 // เปลี่ยนจาก @/components/ui/data-table เป็น @/components/data-table
-import DataTableSearch from '@/components/data-table/DataTableSearch.vue'
-import DataTablePagination from '@/components/data-table/DataTablePagination.vue'
+import DataTableSearch from '@/components/custom/data-table/DataTableSearch.vue'
+import DataTablePagination from '@/components/custom/data-table/DataTablePagination.vue'
 
 // นำเข้าไอคอนที่จำเป็น (ไม่ได้ใช้ในโค้ดปัจจุบัน สามารถลบได้)
 // import { ChevronDown } from 'lucide-vue-next'

@@ -1,7 +1,7 @@
 import { h } from 'vue'
 import { ColumnDef } from '@tanstack/vue-table'
 import { Checkbox } from '@/components/ui/checkbox'
-import DataTableColumnHeader from '@/components/data-table/DataTableColumnHeader.vue'
+import DataTableColumnHeader from '@/components/custom/data-table/DataTableColumnHeader.vue'
 import type { UserPermission } from '@/types/permission'
 import { toast } from 'vue-sonner'
 
