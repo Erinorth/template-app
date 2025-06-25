@@ -6,8 +6,8 @@ import { formatCurrency, cn } from '@/lib/utils'
 
 import { Button } from '@/components/ui/button'
 import { ChevronRight, ChevronDown, Plus, Minus } from 'lucide-vue-next'
-import DataTableColumnHeader from '@/components/data-table/DataTableColumnHeader.vue'
-import StatusBadge from '@/components/data-table/StatusBadge.vue'
+import DataTableColumnHeader from '@/components/custom/data-table/DataTableColumnHeader.vue'
+import StatusBadge from '@/components/custom/data-table/StatusBadge.vue'
 import DropdownAction from '@/pages/payments2/data-table/DropdownAction.vue'
 
 export function createPaymentColumns(): ColumnDef<Payment>[] {

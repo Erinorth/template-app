@@ -5,19 +5,19 @@ import { toast } from 'vue-sonner'
 
 // Layout และ Navigation imports
 import AppLayout from '@/layouts/AppLayout.vue'
-import Title from '@/components/Title.vue'
+import Title from '@/components/custom/Title.vue'
 import type { BreadcrumbItem } from '@/types'
 
 // Data Table imports
 import { useDataTable } from '@/composables/useDataTable'
 import { createPaymentColumns } from '@/pages/payments2/data-table/payment-columns'
 import DataTable from '@/pages/payments2/data-table/DataTable.vue'
-import DataTablePagination from '@/components/data-table/DataTablePagination.vue'
+import DataTablePagination from '@/components/custom/data-table/DataTablePagination.vue'
 
 // Filter Components
-import StatusFilter from '@/components/data-table/StatusFilter.vue'
-import AmountRangeFilter from '@/components/data-table/AmountRangeFilter.vue'
-import EmailFilter from '@/components/data-table/EmailFilter.vue'
+import StatusFilter from '@/components/custom/data-table/StatusFilter.vue'
+import AmountRangeFilter from '@/components/custom/data-table/AmountRangeFilter.vue'
+import EmailFilter from '@/components/custom/data-table/EmailFilter.vue'
 
 // UI Components imports
 import { Button } from '@/components/ui/button'
