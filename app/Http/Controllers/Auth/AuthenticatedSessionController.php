@@ -4,28 +4,34 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Http\Requests\Auth\LoginEGATRequest;  
+use App\Http\Requests\Auth\LoginEGATRequest;
+use App\Services\Auth\EGATAuthService;
+use App\Services\User\UserManagementService;
+use App\Services\Department\DepartmentChangeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
-use nusoap_client;
-use Illuminate\Support\Facades\Log;
-use App\Models\CenSus;
-use Illuminate\Validation\ValidationException;
-use App\Models\User;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 class AuthenticatedSessionController extends Controller
 {
+    public function __construct(
+        private EGATAuthService $egatAuthService,
+        private UserManagementService $userManagementService,
+        private DepartmentChangeService $departmentChangeService
+    ) {}
+
     /**
-     * Show the login page.
+     * แสดงหน้าล็อกอินปกติ
      */
     public function create(Request $request): Response
     {
+        Log::info('แสดงหน้าล็อกอินปกติ');
+        
         return Inertia::render('auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => $request->session()->get('status'),
@@ -45,23 +51,31 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Handle an incoming authentication request.
+     * ประมวลผลการล็อกอินปกติ
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
+        Log::info('เริ่มกระบวนการล็อกอินปกติ', [
+            'email' => $request->input('email'),
+            'ip' => $request->ip()
+        ]);
 
+        $request->authenticate();
         $request->session()->regenerate();
+
+        Log::info('ล็อกอินปกติสำเร็จ', [
+            'user_id' => Auth::id(),
+            'email' => $request->input('email')
+        ]);
 
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
     /**
-     * ประมวลผลล็อกอิน EGAT
+     * ประมวลผลการล็อกอิน EGAT
      */
     public function storeEGAT(LoginEGATRequest $request): RedirectResponse
     {
-        // ตรวจสอบ rate limiting
         $request->ensureIsNotRateLimited();
 
         $username = $request->input('egatid');
@@ -73,173 +87,84 @@ class AuthenticatedSessionController extends Controller
         ]);
 
         try {
-            Log::debug('กำลังเชื่อมต่อ SOAP Web Service');
-
-            // ใช้ Mock SOAP Client ในขณะทดสอบ
-            if (app()->bound('nusoap_client')) {
-                // ใช้ Mock Client ที่ถูก bind ไว้
-                $client = app('nusoap_client');
-            } else {
-                // ใช้ SOAP Client จริง
-                $client = new nusoap_client("http://webservices.egat.co.th/authentication/au_provi.php?wsdl", true);
-                $client->soap_defencoding = 'UTF-8';
-                $client->decode_utf8 = false;
+            // ตรวจสอบผู้ใช้ผ่าน EGAT Service
+            $isValidUser = $this->egatAuthService->validateUser($username, $password);
+            
+            if (!$isValidUser) {
+                $this->handleFailedLogin($request, $username);
+                throw ValidationException::withMessages([
+                    'egatid' => trans('auth.failed'),
+                ]);
             }
 
-            // เรียกใช้งาน SOAP Web Service
-            $result = $client->call("validate_user", [
-                "a" => $username,
-                "b" => $password
-            ]);
+            // สร้างหรืออัปเดตผู้ใช้
+            $user = $this->userManagementService->createOrUpdateEGATUser($username, $password);
+            
+            // ล็อกอินผู้ใช้
+            $this->performLogin($user, $request);
 
-            Log::debug('ผลลัพธ์จาก SOAP Web Service', [
+            Log::info('ล็อกอิน EGAT สำเร็จ', [
+                'user_id' => $user->id,
                 'username' => $username,
-                'result' => $result ? 'success' : 'failed'
+                'current_department' => $user->department,
+                'current_position' => $user->position
             ]);
+            
+            return redirect()->intended(route('dashboard', absolute: false));
 
-            // ถ้าตรวจสอบผ่าน
-            if ($result) {
-                Log::info('ตรวจสอบข้อมูลผู้ใช้ในระบบ', [
-                    'email' => $username.'@egat.co.th'
-                ]);
-                
-                // ค้นหาข้อมูลใน Census
-                $connection = app()->environment('testing') ? 'testing_mmddata' : 'mmddata';
-                $census = CenSus::on($connection)->where('EMPN', $username)->first();
-                
-                Log::info('ผลการค้นหาข้อมูล Census', [
-                    'username' => $username,
-                    'census_found' => $census ? 'true' : 'false',
-                    'department' => $census?->pnang,
-                    'section' => $census?->gong,
-                    'position' => $census?->a_position,
-                    'connection' => $connection
-                ]);
-
-                // ตรวจสอบว่ามีผู้ใช้อยู่แล้วหรือไม่
-                $existingUser = User::where('email', $username . '@egat.co.th')->first();
-                
-                if ($existingUser) {
-                    Log::info('พบผู้ใช้ที่มีอยู่แล้ว - อัปเดตข้อมูล', [
-                        'user_id' => $existingUser->id,
-                    ]);
-                    
-                    // เตรียมข้อมูลสำหรับอัปเดต
-                    $updateData = [
-                        'egat_id' => $username, // แปลงเป็น string
-                    ];
-                    
-                    // เพิ่มข้อมูลจาก Census ถ้ามี
-                    if ($census) {
-                        $updateData['company'] = 'EGAT';
-                        $updateData['department'] = $census->pnang;
-                        $updateData['position'] = $census->a_position;
-                        
-                        Log::info('อัปเดตข้อมูลจาก Census', [
-                            'department' => $census->pnang,
-                            'section' => $census->gong,
-                            'position' => $census->a_position
-                        ]);
-                    }
-                    
-                    // อัปเดตข้อมูลใน database
-                    DB::transaction(function () use ($existingUser, $updateData) {
-                        $existingUser->update($updateData);
-                    });
-                    
-                    // รีเฟรชข้อมูล
-                    $existingUser->refresh();
-                    $user = $existingUser;
-                    
-                    Log::info('อัปเดตข้อมูลผู้ใช้สำเร็จ', [
-                        'user_id' => $user->id,
-                        'department_updated' => $user->department,
-                        'position_updated' => $user->position
-                    ]);
-                    
-                } else {
-                    Log::info('สร้างผู้ใช้ใหม่');
-                    
-                    // เตรียมข้อมูลสำหรับสร้างผู้ใช้ใหม่
-                    $userData = [
-                        'egat_id' => $username, // เก็บเป็น string
-                        'name' => $username,
-                        'email' => $username . '@egat.co.th',
-                        'password' => Hash::make($password),
-                        'email_verified_at' => now(),
-                        'company' => 'EGAT',
-                        'department' => $census?->pnang ?? null,
-                        'position' => $census?->a_position ?? null,
-                    ];
-                    
-                    // สร้างผู้ใช้ใหม่
-                    $user = User::create($userData);
-                    
-                    Log::info('สร้างผู้ใช้ใหม่สำเร็จ', [
-                        'user_id' => $user->id,
-                        'department' => $user->department,
-                        'position' => $user->position,
-                        'email_verified_at' => $user->email_verified_at?->toDateTimeString()
-                    ]);
-                }
-
-                // ล็อกอินผู้ใช้
-                Auth::login($user);
-                $request->session()->regenerate();
-                
-                // ล้าง rate limiting
-                $request->clearRateLimiting();
-
-                Log::info('ล็อกอิน EGAT สำเร็จ', [
-                    'user_id' => $user->id,
-                    'username' => $username,
-                    'current_department' => $user->department,
-                    'current_position' => $user->position,
-                    'email_verified_at' => $user->email_verified_at?->toDateTimeString()
-                ]);
-                
-                return redirect()->intended(route('dashboard', absolute: false));
-            } else {
-                // บันทึกความพยายามล็อกอินที่ผิด
-                $request->recordRateLimitAttempt();
-                
-                Log::warning('ข้อมูลล็อกอินไม่ถูกต้อง', [
-                    'username' => $username,
-                    'ip' => $request->ip()
-                ]);
-            }
-
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
-            // บันทึกความพยายามล็อกอินที่ผิด
-            $request->recordRateLimitAttempt();
-            
-            Log::error('ข้อผิดพลาดในการเชื่อมต่อ SOAP Web Service', [
-                'username' => $username,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
+            $this->handleSystemError($request, $username, $e);
             throw ValidationException::withMessages([
                 'egatid' => 'ไม่สามารถเชื่อมต่อกับระบบตรวจสอบได้ กรุณาลองใหม่อีกครั้ง',
             ]);
         }
+    }
 
-        // ถ้าล็อกอินไม่สำเร็จ
-        throw ValidationException::withMessages([
-            'egatid' => trans('auth.failed'),
+    /**
+     * ดำเนินการล็อกอินผู้ใช้
+     */
+    private function performLogin($user, LoginEGATRequest $request): void
+    {
+        Auth::login($user);
+        $request->session()->regenerate();
+        $request->clearRateLimiting();
+    }
+
+    /**
+     * จัดการล็อกอินที่ไม่สำเร็จ
+     */
+    private function handleFailedLogin(LoginEGATRequest $request, string $username): void
+    {
+        $request->recordRateLimitAttempt();
+        Log::warning('ข้อมูลล็อกอินไม่ถูกต้อง', ['username' => $username, 'ip' => $request->ip()]);
+    }
+
+    /**
+     * จัดการข้อผิดพลาดของระบบ
+     */
+    private function handleSystemError(LoginEGATRequest $request, string $username, \Exception $exception): void
+    {
+        $request->recordRateLimitAttempt();
+        Log::error('ข้อผิดพลาดในการเชื่อมต่อ SOAP Web Service', [
+            'username' => $username,
+            'error' => $exception->getMessage()
         ]);
     }
 
     /**
-     * Destroy an authenticated session.
+     * ล็อกเอาท์ผู้ใช้
      */
     public function destroy(Request $request): RedirectResponse
     {
-        Auth::guard('web')->logout();
+        Log::info('เริ่มกระบวนการล็อกเอาท์', ['user_id' => Auth::id()]);
 
+        Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
+        Log::info('ล็อกเอาท์สำเร็จ');
         return redirect('/');
     }
 }
