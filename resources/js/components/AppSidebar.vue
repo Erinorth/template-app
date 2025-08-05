@@ -53,7 +53,7 @@ const footerNavItems = computed((): NavItem[] => {
         console.log('✅ Adding User & Role Management to footer nav');
         baseItems.push({
             title: 'User & Role Management',
-            href: '/user-management',
+            href: '/user-roles',
             icon: Users,
         });
     } else {
