@@ -2,10 +2,12 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Log;
 
+/**
+ * Seeder หลักสำหรับการสร้างข้อมูลเริ่มต้นของระบบ
+ */
 class DatabaseSeeder extends Seeder
 {
     /**
@@ -13,11 +15,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        Log::info('เริ่มการ seeding ข้อมูลระบบ');
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // เรียก seeder สำหรับสร้าง roles และ users
+        $this->call([
+            RoleUserSeeder::class,
         ]);
+
+        Log::info('การ seeding ข้อมูลระบบเสร็จสิ้น');
     }
 }
