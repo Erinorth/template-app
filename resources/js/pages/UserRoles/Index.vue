@@ -7,6 +7,9 @@ import { router, useForm } from '@inertiajs/vue3'
 import { toast } from 'vue-sonner'
 import { debounce } from 'lodash'
 
+// Import HeaderWithTitle Component
+import { HeaderWithTitle } from '@/components/custom/header-with-title'
+
 // Import Components
 import Card from '@/components/ui/card/Card.vue'
 import CardContent from '@/components/ui/card/CardContent.vue'
@@ -27,7 +30,8 @@ import {
   UserCheck, 
   Trash2, 
   ChevronLeft, 
-  ChevronRight 
+  ChevronRight,
+  Settings
 } from 'lucide-vue-next'
 
 // กำหนด breadcrumbs
@@ -93,6 +97,19 @@ const isUpdating = ref(false)
 // ฟอร์มสำหรับค้นหา
 const searchForm = useForm({
   search: props.filters.search || ''
+})
+
+// คำนวณข้อมูลสำหรับ HeaderWithTitle
+const totalUsersWithRoles = computed(() => {
+  return props.users.data.filter(user => user.roles.length > 0).length
+})
+
+const headerDescription = computed(() => {
+  const totalUsers = props.users.total
+  const usersWithRoles = totalUsersWithRoles.value
+  const usersWithoutRoles = totalUsers - usersWithRoles
+  
+  return `จัดการสิทธิ์การเข้าใช้งานระบบสำหรับผู้ใช้ทั้งหมด ${totalUsers} คน โดยมีผู้ใช้ที่ได้รับ role แล้ว ${usersWithRoles} คน และยังไม่ได้รับ role ${usersWithoutRoles} คน`
 })
 
 // ฟังก์ชันค้นหาแบบ debounce (รอ 500ms หลังจากหยุดพิมพ์)
@@ -270,6 +287,13 @@ const getUsersByRole = (roleName: string): number => {
     user.roles.some(role => role.name === roleName)
   ).length
 }
+
+// Log สำหรับการตรวจสอบ
+console.log('UserRoles Index: หน้าจัดการ role ผู้ใช้โหลดเสร็จสิ้น', {
+  totalUsers: props.users.total,
+  currentPage: props.users.current_page,
+  availableRoles: props.availableRoles.length
+})
 </script>
 
 <template>
@@ -277,6 +301,24 @@ const getUsersByRole = (roleName: string): number => {
 
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+      <!-- Header with Title พร้อมข้อมูลสถิติ -->
+      <HeaderWithTitle
+        title="จัดการ Role ผู้ใช้"
+        :description="headerDescription"
+        badge="การจัดการสิทธิ์"
+        badge-variant="outline"
+        size="lg"
+      >
+        <!-- Actions Slot สำหรับปุ่มหรือ controls เพิ่มเติม (ถ้ามี) -->
+        <template #actions>
+          <div class="flex items-center gap-2">
+            <Badge variant="secondary" class="hidden sm:flex">
+              <Settings class="h-3 w-3 mr-1" />
+              {{ props.availableRoles.length }} Roles
+            </Badge>
+          </div>
+        </template>
+      </HeaderWithTitle>
       <!-- สถิติสรุปด้านบน -->
       <div class="grid auto-rows-min gap-4 md:grid-cols-3">
         <!-- การ์ดแสดงจำนวนผู้ใช้ทั้งหมด -->
@@ -477,7 +519,7 @@ const getUsersByRole = (roleName: string): number => {
 
               <!-- แสดงเมื่อไม่มีข้อมูล -->
               <div v-if="users.data.length === 0" class="text-center py-12">
-                <Users class="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                <Users class="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto" />
                 <p class="text-gray-500 dark:text-gray-400">ไม่พบผู้ใช้ที่ตรงกับการค้นหา</p>
               </div>
             </CardContent>
