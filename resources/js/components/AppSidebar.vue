@@ -86,18 +86,8 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Data Table Demo',
-        href: '/data-table-demo',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Payment',
-        href: '/payments',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Payment2',
-        href: '/payments2',
+        title: 'Citizens(Example)',
+        href: '/citizens',
         icon: LayoutGrid,
     },
 ];

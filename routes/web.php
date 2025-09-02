@@ -1,12 +1,9 @@
 <?php
 
 use App\Http\Controllers\PermissionController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\Payment2Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\UserRole\UserRoleController;
 
 Route::get('/', function () {
