@@ -85,7 +85,9 @@ const submit = () => {
             </div>
 
             <div class="text-center text-sm text-muted-foreground">
-                Or with
+                Don't have an account?
+                <TextLink :href="route('register')" :tabindex="5">Sign up</TextLink>
+                or with
                 <TextLink :href="route('loginEGAT')" :tabindex="5">EGAT ID</TextLink>
             </div>
         </form>

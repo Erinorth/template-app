@@ -6,14 +6,8 @@ use App\Http\Controllers\Payment2Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-
-/* Route::get('/', function () {
-    return Inertia::render('Welcome');
-})->name('home'); */
-
-/* Route::get('/', function () {
-    return redirect()->route('login');
-})->name('home'); */
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\UserRole\UserRoleController;
 
 Route::get('/', function () {
     if (Auth::check()) {
@@ -26,21 +20,13 @@ Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
-
-    // Route สำหรับแสดง Data Table Demo
-    Route::get('/data-table-demo', function () {
-        return Inertia::render('data_table_demo/DataTable');
-    })->name('data-table.demo');
-
-    Route::resource('payments', PaymentController::class);
-    
-    // Route เพิ่มเติมสำหรับเปลี่ยนสถานะ
-    Route::patch('payments/{payment}/status', [PaymentController::class, 'updateStatus'])
-         ->name('payments.update-status');
-
-    Route::resource('payments2', Payment2Controller::class);
-
+Route::middleware(['auth', 'verified'])->group(function () {
+    // User Role Management Routes
+    Route::prefix('user-roles')->name('user-roles.')->group(function () {
+        Route::get('/', [UserRoleController::class, 'index'])->name('index');
+        Route::patch('/{user}/update-role', [UserRoleController::class, 'updateRole'])->name('update-role');
+        Route::delete('/{user}/remove-role', [UserRoleController::class, 'removeRole'])->name('remove-role');
+    });
 });
 
 require __DIR__.'/settings.php';
