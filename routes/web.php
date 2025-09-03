@@ -21,8 +21,7 @@ Route::get('dashboard', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
 
     // Citizen Management Routes
-    Route::get('/citizens', [CitizenController::class, 'index'])
-    ->name('citizens.index');
+    Route::resource('citizens', CitizenController::class);
 
     // User Role Management Routes
     Route::prefix('user-roles')->name('user-roles.')->group(function () {
