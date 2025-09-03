@@ -20,6 +20,9 @@ class DatabaseSeeder extends Seeder
         // เรียก seeder สำหรับสร้าง roles และ users
         $this->call([
             RoleUserSeeder::class,
+            CitizenSeeder::class,
+            CitizenCardSeeder::class,
+            CitizenCardAttachmentSeeder::class,
         ]);
 
         Log::info('การ seeding ข้อมูลระบบเสร็จสิ้น');
