@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CitizenController;
 use App\Http\Controllers\PermissionController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +19,11 @@ Route::get('dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+
+    // Citizen Management Routes
+    Route::get('/citizens', [CitizenController::class, 'index'])
+    ->name('citizens.index');
+
     // User Role Management Routes
     Route::prefix('user-roles')->name('user-roles.')->group(function () {
         Route::get('/', [UserRoleController::class, 'index'])->name('index');

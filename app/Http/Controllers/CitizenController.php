@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Citizen;
 use App\Http\Requests\StoreCitizenRequest;
 use App\Http\Requests\UpdateCitizenRequest;
+use Inertia\Inertia;
 
 class CitizenController extends Controller
 {
@@ -13,7 +14,9 @@ class CitizenController extends Controller
      */
     public function index()
     {
-        //
+        return Inertia::render('citizens/Index', [
+            'title' => 'Citizens',
+        ]);
     }
 
     /**
