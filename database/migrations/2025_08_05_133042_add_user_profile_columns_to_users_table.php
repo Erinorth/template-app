@@ -14,7 +14,6 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             // เพิ่ม column ข้อมูลโปรไฟล์ผู้ใช้
-            $table->string('egat_id')->nullable()->comment('รหัสพนักงาน EGAT'); 
             $table->string('company')->nullable()->comment('บริษัท/หน่วยงาน');
             $table->string('department')->nullable()->comment('แผนก');
             $table->string('position')->nullable()->comment('ตำแหน่งงาน');
@@ -30,7 +29,6 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             // ลบ column ที่เพิ่มเข้าไป
             $table->dropColumn([
-                'egat_id', 
                 'company', 
                 'department', 
                 'position'

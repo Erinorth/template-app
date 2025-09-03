@@ -28,7 +28,7 @@ class CitizenCardAttachmentSeeder extends Seeder
 
                         CitizenCardAttachment::factory()
                             ->count($attachments)
-                            ->for($card, 'card')
+                            ->for($card, 'citizenCard')
                             ->create();
 
                         Log::info('[CitizenCardAttachmentSeeder] สร้างไฟล์แนบแล้ว', [
