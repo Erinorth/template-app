@@ -1,26 +1,18 @@
-<script setup lang="ts">
-import { h } from 'vue'
+<script setup lang="ts" generic="TData">
 import type { Column } from '@tanstack/vue-table'
-import type { Payment } from '@/types/payment'
+// ลบ: import type { Payment } from '@/types/payment'
 import { useStatusFilter } from '@/composables/useTableFilters'
 import { Filter, X } from 'lucide-vue-next'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 
-// Define props
 interface Props {
-  column: Column<Payment, any>
+  column: Column<TData, any>
 }
-
 const props = defineProps<Props>()
 
-// ใช้ composable สำหรับจัดการ status filter
 const { selectedValues, facetedValues, toggleValue, clearFilter } = useStatusFilter(props.column)
 </script>
 

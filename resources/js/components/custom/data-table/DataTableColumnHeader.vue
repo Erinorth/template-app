@@ -1,16 +1,8 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="TData">
 import { h } from 'vue'
 import type { Column } from '@tanstack/vue-table'
-import type { Payment } from '@/types/payment'
 import { cn } from '@/lib/utils'
-import { 
-  ArrowDown, 
-  ArrowUp, 
-  ArrowUpDown, 
-  EyeOff,
-  Group,
-  Ungroup
-} from 'lucide-vue-next'
+import { ArrowDown, ArrowUp, ArrowUpDown, EyeOff, Group, Ungroup } from 'lucide-vue-next'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,9 +13,8 @@ import {
 import { Button } from '@/components/ui/button'
 import ColumnResizeHandle from './ColumnResizeHandle.vue'
 
-// Define props
 interface Props {
-  column: Column<Payment, any>
+  column: Column<TData, any>
   title: string
   class?: string
   header?: any

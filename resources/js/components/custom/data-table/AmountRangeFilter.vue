@@ -1,35 +1,24 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="TData">
 import { computed } from 'vue'
 import type { Column } from '@tanstack/vue-table'
-import type { Payment } from '@/types/payment'
-import type { AmountFilter } from '@/types/payment'
 import { useAmountRangeFilter } from '@/composables/useTableFilters'
 import { Filter, X } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
-// Props definition
 interface Props {
-  column: Column<Payment, any>
+  column: Column<TData, any>
 }
-
 const props = defineProps<Props>()
 
-// ใช้ composable สำหรับจัดการ amount range filter
 const { filterValue, facetedMinMax, hasFilter } = useAmountRangeFilter(props.column)
 
-// Enhanced update filter function พร้อม toast notification
 const updateFilter = () => {
   const hasValues = filterValue.value.min !== undefined || filterValue.value.max !== undefined
   props.column.setFilterValue(hasValues ? { ...filterValue.value } : undefined)
-  
   if (hasValues) {
     const minText = filterValue.value.min ? `$${filterValue.value.min}` : '$0'
     const maxText = filterValue.value.max ? `$${filterValue.value.max}` : 'ไม่จำกัด'
@@ -37,14 +26,12 @@ const updateFilter = () => {
   }
 }
 
-// Enhanced clear filter function พร้อม toast notification
 const clearFilter = () => {
   filterValue.value = {}
   props.column.setFilterValue(undefined)
   toast.info('ล้างการกรองจำนวนเงิน')
 }
 
-// Handle input updates พร้อม validation
 const handleMinUpdate = (value: string | number) => {
   filterValue.value.min = value ? Number(value) : undefined
   updateFilter()

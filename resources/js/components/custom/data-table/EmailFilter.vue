@@ -1,42 +1,33 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="TData">
 import { ref, computed } from 'vue'
 import type { Column } from '@tanstack/vue-table'
-import type { Payment } from '@/types/payment'
 import { Search, X } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
-// Props definition
 interface Props {
-  column: Column<Payment, any>
+  column: Column<TData, any>
 }
-
 const props = defineProps<Props>()
 
-// Reactive state สำหรับจัดการ filter
-const inputValue = ref(props.column.getFilterValue() as string || '')
+const inputValue = ref((props.column.getFilterValue() as string) || '')
 
-// ฟังก์ชันจัดการการเปลี่ยนแปลงของ input
 const handleInputChange = (value: string | number) => {
   const stringValue = String(value)
   inputValue.value = stringValue
   props.column.setFilterValue(stringValue)
 }
 
-// ฟังก์ชันล้าง filter
 const clearFilter = () => {
   inputValue.value = ''
   props.column.setFilterValue('')
   toast.info('ล้างการกรองอีเมล')
 }
 
-// ตรวจสอบว่ามี filter หรือไม่
 const hasFilter = computed(() => inputValue.value !== '')
 
-// ฟร็อม events
 const handleKeydown = (event: KeyboardEvent) => {
-  // กด Escape เพื่อล้าง filter
   if (event.key === 'Escape' && hasFilter.value) {
     clearFilter()
     event.preventDefault()

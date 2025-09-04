@@ -1,7 +1,6 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="TData">
 import { computed } from 'vue'
 import type { Table } from '@tanstack/vue-table'
-import type { Payment } from '@/types/payment'
 import { X, Filter, Group, Ungroup } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -11,37 +10,41 @@ import StatusFilter from './StatusFilter.vue'
 import AmountRangeFilter from './AmountRangeFilter.vue'
 import EmailFilter from './EmailFilter.vue'
 
-// Props definition
 interface Props {
-  table: Table<Payment>
+  table: Table<TData>
   activeFiltersCount: number
   activeGroupingCount: number
   grouping: string[]
+  // เพิ่ม: กำหนด mapping ของคอลัมน์ที่ต้องการใช้ฟิลเตอร์ เพื่อไม่ hardcode โดเมน
+  filterColumnIds?: {
+    status?: string
+    amount?: string
+    email?: string
+  }
 }
-
 const props = defineProps<Props>()
 
-// Events
-const emit = defineEmits<{
-  clearFilters: []
-}>()
+const statusColumn = computed(() => {
+  const id = props.filterColumnIds?.status ?? 'status'
+  return props.table.getColumn(id)
+})
+const amountColumn = computed(() => {
+  const id = props.filterColumnIds?.amount ?? 'amount'
+  return props.table.getColumn(id)
+})
+const emailColumn = computed(() => {
+  const id = props.filterColumnIds?.email ?? 'email'
+  return props.table.getColumn(id)
+})
 
-// ตรวจสอบว่ามี columns หรือไม่
-const statusColumn = computed(() => props.table.getColumn('status'))
-const amountColumn = computed(() => props.table.getColumn('amount'))
-const emailColumn = computed(() => props.table.getColumn('email'))
-
-// แสดงรายการ grouping ที่ active
 const activeGroupings = computed(() => {
-  return props.grouping.map(groupId => {
+  return props.grouping.map((groupId) => {
     const column = props.table.getColumn(groupId)
-    return {
-      id: groupId,
-      name: column?.columnDef.header || groupId
-    }
+    return { id: groupId, name: column?.columnDef.header || groupId }
   })
 })
 
+const emit = defineEmits<{ clearFilters: [] }>()
 const clearGrouping = () => {
   try {
     props.table.resetGrouping()
