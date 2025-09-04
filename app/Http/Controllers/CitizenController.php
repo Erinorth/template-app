@@ -14,8 +14,15 @@ class CitizenController extends Controller
      */
     public function index()
     {
+        // โหมดง่าย: โหลดข้อมูลล่าสุดจำนวนจำกัดเพื่อเรนเดอร์ตาราง
+        $citizens = Citizen::query()
+            ->latest('id')
+            ->limit(100)
+            ->get();
+
         return Inertia::render('citizens/Index', [
             'title' => 'Citizens',
+            'citizens' => $citizens,
         ]);
     }
 
