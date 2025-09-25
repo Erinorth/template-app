@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Citizen;
+use Illuminate\Http\Request;
 use App\Http\Requests\StoreCitizenRequest;
 use App\Http\Requests\UpdateCitizenRequest;
 use Inertia\Inertia;
@@ -12,13 +13,14 @@ class CitizenController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // โหมดง่าย: โหลดข้อมูลล่าสุดจำนวนจำกัดเพื่อเรนเดอร์ตาราง
+        $perPage = (int) $request->input('per_page', 10);
+        
         $citizens = Citizen::query()
             ->latest('id')
-            ->limit(100)
-            ->get();
+            ->paginate($perPage)
+            ->withQueryString();
 
         return Inertia::render('citizens/Index', [
             'title' => 'Citizens',
