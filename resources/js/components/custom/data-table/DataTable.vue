@@ -1,6 +1,5 @@
 <script setup lang="ts" generic="TData">
 // comment: import ref จาก 'vue' เพื่อแก้ปัญหา ReferenceError: ref is not defined
-import { ref } from 'vue'
 import type { ColumnDef } from '@tanstack/vue-table'
 import { FlexRender, getCoreRowModel, getSortedRowModel, useVueTable } from '@tanstack/vue-table'
 import {
@@ -11,7 +10,6 @@ import {
   TableBody,
   TableCell,
 } from '@/components/ui/table'
-import { valueUpdater } from '@/lib/utils'
 
 // comment: รับ props columns และ data
 const props = defineProps<{
