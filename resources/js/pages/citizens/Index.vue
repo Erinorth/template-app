@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// comment: นำเข้า layout, breadcrumb, และ composable ทั้งหมด
 import AppLayout from '@/layouts/AppLayout.vue'
 import { type BreadcrumbItem } from '@/types'
 import { Head, Link } from '@inertiajs/vue3'
@@ -14,26 +13,24 @@ import { useServerSort } from '@/composables/useServerSort'
 import { useServerPagination } from '@/composables/useServerPagination'
 import { computed } from 'vue'
 
-// comment: รับ props ทุกตัวที่ backend ส่งมา (สำคัญ! sort, direction)
+// comment: เพิ่ม title ใน props (ต้องประกาศให้ match กับ backend)
 const props = defineProps<{
+  title: string
   citizens: LengthAwarePaginator<Citizen>,
   sort: string,
   direction: string,
 }>()
 
-// comment: breadcrumb ด้านบน
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Dashboard', href: '/dashboard' },
   { title: 'Citizens', href: '/citizens' },
 ]
 
-// comment: สร้าง computed สำหรับค่า sort/direction/page/per_page ที่เปลี่ยนตาม props
 const currentSort = computed(() => props.sort)
 const currentDirection = computed(() => props.direction)
 const currentPage = computed(() => props.citizens.current_page)
 const perPage = computed(() => props.citizens.per_page)
 
-// comment: ฟังก์ชัน sort (ใช้ computed เพื่อให้ค่าทันสมัยเสมอ)
 const { onSort } = useServerSort({
   routeName: 'citizens.index',
   sort: currentSort,
@@ -42,14 +39,12 @@ const { onSort } = useServerSort({
   perPage,
 })
 
-// comment: columns สำหรับตาราง โดยส่งค่า sort ปัจจุบันด้วย
 const { columns } = useCitizenColumns({
   onSort,
   currentSort: currentSort.value,
   currentDirection: currentDirection.value,
 })
 
-// comment: ฟังก์ชัน pagination
 const { goPage, changePageSize } = useServerPagination({
   routeName: 'citizens.index',
   currentPage: currentPage.value,
@@ -59,11 +54,11 @@ const { goPage, changePageSize } = useServerPagination({
 </script>
 
 <template>
-  <Head title="Citizens" />
+  <Head :title="props.title ?? 'Citizens'" />
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
       <HeaderWithTitle
-        :title="$page.props.title ?? 'Citizens'"
+        :title="props.title ?? 'Citizens'"
         subtitle="ข้อมูลประชาชนในระบบ"
         description="ตารางโหมดง่าย + แบ่งหน้าฝั่งเซิร์ฟเวอร์"
         badge="รายการ"
@@ -79,7 +74,6 @@ const { goPage, changePageSize } = useServerPagination({
         </template>
       </HeaderWithTitle>
 
-      <!-- ส่งข้อมูลหน้าปัจจุบัน, columns กำหนดเป็น server-side sort -->
       <DataTable :columns="columns" :data="props.citizens.data" />
 
       <DataTablePagination

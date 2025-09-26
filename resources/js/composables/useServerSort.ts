@@ -1,4 +1,5 @@
 import { ref, isRef } from 'vue'
+import type { Ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { toast } from 'vue-sonner'
 
