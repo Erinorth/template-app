@@ -15,35 +15,53 @@ class CitizenController extends Controller
      */
     public function index(Request $request)
     {
-        // รับ parameter การ sort จาก client (sort, direction)
-        $sort = $request->input('sort', 'id'); // ค่า default คือ id
-        $direction = $request->input('direction', 'desc'); // ค่า default คือ desc
+        // ค่าที่ใช้สำหรับจัดเรียงข้อมูล (sort)
+        $sort = $request->input('sort', 'id');
+        $direction = $request->input('direction', 'desc');
         $validSorts = ['id', 'citizen_id', 'birth_date', 'remark', 'created_at'];
 
-        // ตรวจสอบว่า sort ถูกต้องหรือไม่
         if (!in_array($sort, $validSorts)) {
             $sort = 'id';
         }
         if (!in_array(strtolower($direction), ['asc', 'desc'])) {
             $direction = 'desc';
         }
-
         $perPage = (int) $request->input('per_page', 10);
 
-        // query ข้อมูล citizen และ sorting + paginate
-        $citizens = Citizen::query()
+        // ตัวแปรกรองข้อมูล/ค้นหา
+        $search = $request->input('search');
+
+        // query หลัก
+        $query = Citizen::query();
+
+        // ถ้ามีค่า search ให้ filter หลายคอลัมน์
+        if ($search) {
+            \Log::info('Citizen search filter', ['search' => $search]);
+            $query->where(function ($q) use ($search) {
+                $q->where('citizen_id', 'like', '%' . $search . '%')
+                  ->orWhere('remark', 'like', '%' . $search . '%')
+                  ->orWhere('birth_date', 'like', '%' . $search . '%')
+                  ->orWhere('id', $search); // id ให้ค้นหาตรงๆ
+            });
+        }
+
+        // การจัดเรียงและแบ่งหน้า
+        $citizens = $query
             ->orderBy($sort, $direction)
             ->paginate($perPage)
             ->withQueryString();
 
-        // log (สำหรับ debugging)
+        // log
         \Log::info('Citizen index fetch', compact('sort', 'direction', 'perPage'));
 
+        // ส่งข้อมูลไป frontend
         return Inertia::render('citizens/Index', [
             'title' => 'Citizens',
             'citizens' => $citizens,
             'sort' => $sort,
             'direction' => $direction,
+            // เพิ่ม query string ทั้งหมดให้ frontend สามารถอ่านค่า search ได้ (กรณี reload)
+            'query' => $request->query()
         ]);
     }
 
