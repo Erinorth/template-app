@@ -1,6 +1,8 @@
 <script setup lang="ts" generic="TData">
+// comment: import ref จาก 'vue' เพื่อแก้ปัญหา ReferenceError: ref is not defined
+import { ref } from 'vue'
 import type { ColumnDef } from '@tanstack/vue-table'
-import { FlexRender, getCoreRowModel, useVueTable } from '@tanstack/vue-table'
+import { FlexRender, getCoreRowModel, getSortedRowModel, useVueTable } from '@tanstack/vue-table'
 import {
   Table,
   TableHeader,
@@ -9,12 +11,15 @@ import {
   TableBody,
   TableCell,
 } from '@/components/ui/table'
+import { valueUpdater } from '@/lib/utils'
 
+// comment: รับ props columns และ data
 const props = defineProps<{
   columns: ColumnDef<TData, any>[]
   data: TData[]
 }>()
 
+// comment: ใช้งาน useVueTable จาก tanstack-table
 const table = useVueTable({
   get data() {
     return props.data
@@ -27,6 +32,7 @@ const table = useVueTable({
 </script>
 
 <template>
+  <!-- comment: โครงสร้างตาราง UI -->
   <div class="border rounded-md">
     <Table>
       <TableHeader>
@@ -47,7 +53,6 @@ const table = useVueTable({
           </TableHead>
         </TableRow>
       </TableHeader>
-
       <TableBody>
         <template v-if="table.getRowModel().rows?.length">
           <TableRow v-for="row in table.getRowModel().rows" :key="row.id">

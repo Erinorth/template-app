@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// comment: นำเข้า layout, breadcrumb, และ composable ทั้งหมด
 import AppLayout from '@/layouts/AppLayout.vue'
 import { type BreadcrumbItem } from '@/types'
 import { Head, Link } from '@inertiajs/vue3'
@@ -9,29 +10,56 @@ import DataTablePagination from '@/components/custom/data-table/DataTablePaginat
 import type { Citizen } from '@/types/citizen'
 import type { LengthAwarePaginator } from '@/types/pagination'
 import { useCitizenColumns } from '@/composables/useCitizenColumns'
+import { useServerSort } from '@/composables/useServerSort'
 import { useServerPagination } from '@/composables/useServerPagination'
+import { computed } from 'vue'
 
-const props = defineProps<{ citizens: LengthAwarePaginator<Citizen> }>()
+// comment: รับ props ทุกตัวที่ backend ส่งมา (สำคัญ! sort, direction)
+const props = defineProps<{
+  citizens: LengthAwarePaginator<Citizen>,
+  sort: string,
+  direction: string,
+}>()
 
+// comment: breadcrumb ด้านบน
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Dashboard', href: '/dashboard' },
   { title: 'Citizens', href: '/citizens' },
 ]
 
-const { columns } = useCitizenColumns()
+// comment: สร้าง computed สำหรับค่า sort/direction/page/per_page ที่เปลี่ยนตาม props
+const currentSort = computed(() => props.sort)
+const currentDirection = computed(() => props.direction)
+const currentPage = computed(() => props.citizens.current_page)
+const perPage = computed(() => props.citizens.per_page)
 
-// ใช้ composable เพื่อสร้าง handlers สำหรับ Inertia
+// comment: ฟังก์ชัน sort (ใช้ computed เพื่อให้ค่าทันสมัยเสมอ)
+const { onSort } = useServerSort({
+  routeName: 'citizens.index',
+  sort: currentSort,
+  direction: currentDirection,
+  currentPage,
+  perPage,
+})
+
+// comment: columns สำหรับตาราง โดยส่งค่า sort ปัจจุบันด้วย
+const { columns } = useCitizenColumns({
+  onSort,
+  currentSort: currentSort.value,
+  currentDirection: currentDirection.value,
+})
+
+// comment: ฟังก์ชัน pagination
 const { goPage, changePageSize } = useServerPagination({
   routeName: 'citizens.index',
-  currentPage: props.citizens.current_page,
+  currentPage: currentPage.value,
   totalPages: props.citizens.last_page,
-  perPage: props.citizens.per_page,
+  perPage: perPage.value,
 })
 </script>
 
 <template>
   <Head title="Citizens" />
-
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
       <HeaderWithTitle
@@ -51,7 +79,7 @@ const { goPage, changePageSize } = useServerPagination({
         </template>
       </HeaderWithTitle>
 
-      <!-- ส่งเฉพาะข้อมูลในหน้าปัจจุบัน -->
+      <!-- ส่งข้อมูลหน้าปัจจุบัน, columns กำหนดเป็น server-side sort -->
       <DataTable :columns="columns" :data="props.citizens.data" />
 
       <DataTablePagination
