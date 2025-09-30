@@ -1,12 +1,40 @@
 import { ref, computed } from 'vue'
-import { useVueTable, getCoreRowModel, getPaginationRowModel, getSortedRowModel, getFilteredRowModel, getExpandedRowModel, getFacetedRowModel, getFacetedUniqueValues, getFacetedMinMaxValues, getGroupedRowModel } from '@tanstack/vue-table'
+import { 
+  useVueTable, 
+  getCoreRowModel, 
+  getPaginationRowModel, 
+  getSortedRowModel, 
+  getFilteredRowModel, 
+  getExpandedRowModel, 
+  getFacetedRowModel, 
+  getFacetedUniqueValues, 
+  getFacetedMinMaxValues, 
+  getGroupedRowModel 
+} from '@tanstack/vue-table'
 import { valueUpdater } from '@/lib/utils'
 import { statusMultiSelectFilter, amountRangeFilter } from '@/lib/table-utils'
-import type { TableConfig, SortingState, ColumnFiltersState, VisibilityState, ExpandedState, GroupingState, ColumnSizingState } from '@/types/table'
-import { toast } from 'vue-sonner'
+import { useToast } from './useToast'
+import { useErrorHandler } from './useErrorHandler'
+import { useServerOperations } from './useServerOperations'
+import type { 
+  TableConfig, 
+  SortingState, 
+  ColumnFiltersState, 
+  VisibilityState, 
+  ExpandedState, 
+  GroupingState, 
+  ColumnSizingState 
+} from '@/types/table'
 
+/**
+ * Enhanced data table composable with integrated server operations
+ * รองรับทั้ง client-side และ server-side operations
+ */
 export function useDataTable<T>(config: TableConfig<T>) {
-  // สถานะตาราง
+  const { filterToast } = useToast()
+  const { safeExecuteSync } = useErrorHandler()
+  
+  // Table states
   const sorting = ref<SortingState>([])
   const columnFilters = ref<ColumnFiltersState>([])
   const columnVisibility = ref<VisibilityState>({})
@@ -15,7 +43,17 @@ export function useDataTable<T>(config: TableConfig<T>) {
   const columnSizing = ref<ColumnSizingState>({})
   const grouping = ref<GroupingState>([])
 
-  // สร้างตาราง
+  // Server operations (ถ้าเปิดใช้งาน)
+  const serverOps = config.enableServerSide && config.routeName ? 
+    useServerOperations({
+      routeName: config.routeName,
+      currentPage: config.currentPage || 1,
+      totalPages: config.totalPages,
+      perPage: config.perPage || 10,
+      extra: {}
+    }) : null
+
+  // สร้าง table instance
   const table = useVueTable({
     get data() { return config.data },
     get columns() { return config.columns },
@@ -28,16 +66,25 @@ export function useDataTable<T>(config: TableConfig<T>) {
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getFacetedMinMaxValues: getFacetedMinMaxValues(),
     getGroupedRowModel: getGroupedRowModel(),
+    
+    // Feature flags
     enableColumnResizing: config.enableColumnResizing ?? true,
-    columnResizeMode: 'onChange',
-    columnResizeDirection: 'ltr',
     enableColumnFilters: config.enableFiltering ?? true,
     enableGrouping: config.enableGrouping ?? true,
+    enableSorting: config.enableSorting ?? true,
+    
+    // Configuration
+    columnResizeMode: 'onChange',
+    columnResizeDirection: 'ltr',
     groupedColumnMode: 'reorder',
+    
+    // Custom filter functions
     filterFns: {
       statusMultiSelect: statusMultiSelectFilter,
       amountRange: amountRangeFilter,
     },
+    
+    // State handlers
     onSortingChange: updaterOrValue => valueUpdater(updaterOrValue, sorting),
     onColumnFiltersChange: updaterOrValue => valueUpdater(updaterOrValue, columnFilters),
     onColumnVisibilityChange: updaterOrValue => valueUpdater(updaterOrValue, columnVisibility),
@@ -45,6 +92,8 @@ export function useDataTable<T>(config: TableConfig<T>) {
     onExpandedChange: updaterOrValue => valueUpdater(updaterOrValue, expanded),
     onColumnSizingChange: updaterOrValue => valueUpdater(updaterOrValue, columnSizing),
     onGroupingChange: updaterOrValue => valueUpdater(updaterOrValue, grouping),
+    
+    // Current state
     state: {
       get sorting() { return sorting.value },
       get columnFilters() { return columnFilters.value },
@@ -56,38 +105,43 @@ export function useDataTable<T>(config: TableConfig<T>) {
     },
   })
 
-  // ฟังก์ชันเสริม
+  // Utility functions
   const getColumnWidth = (columnId: string, defaultSize: number) => {
-    return columnSizing.value[columnId] || defaultSize
+    return safeExecuteSync(
+      () => columnSizing.value[columnId] || defaultSize,
+      'เกิดข้อผิดพลาดในการดึงขนาดคอลัมน์'
+    ) || defaultSize
   }
 
   const clearAllFilters = () => {
-    try {
+    safeExecuteSync(() => {
       table.resetColumnFilters()
-      toast.info('ล้างตัวกรองทั้งหมดแล้ว')
-    } catch (error) {
-      console.warn('Clear filters failed:', error)
-    }
+      filterToast.cleared('ทั้งหมด')
+    })
   }
 
+  // Computed properties
   const activeFiltersCount = computed(() => {
-    try {
-      return columnFilters.value.length
-    } catch {
-      return 0
-    }
+    return safeExecuteSync(() => columnFilters.value.length) || 0
   })
 
   const activeGroupingCount = computed(() => {
-    try {
-      return grouping.value.length
-    } catch {
-      return 0
-    }
+    return safeExecuteSync(() => grouping.value.length) || 0
+  })
+
+  const selectedRowsCount = computed(() => {
+    return safeExecuteSync(() => Object.keys(rowSelection.value).length) || 0
+  })
+
+  const totalRows = computed(() => {
+    return safeExecuteSync(() => config.data.length) || 0
   })
 
   return {
+    // Table instance
     table,
+    
+    // States
     sorting,
     columnFilters,
     columnVisibility,
@@ -95,9 +149,18 @@ export function useDataTable<T>(config: TableConfig<T>) {
     expanded,
     columnSizing,
     grouping,
+    
+    // Utility functions
     getColumnWidth,
     clearAllFilters,
+    
+    // Computed properties
     activeFiltersCount,
-    activeGroupingCount
+    activeGroupingCount,
+    selectedRowsCount,
+    totalRows,
+    
+    // Server operations (ถ้ามี)
+    ...(serverOps || {})
   }
 }

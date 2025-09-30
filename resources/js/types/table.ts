@@ -1,3 +1,4 @@
+// ปรับปรุงให้รวม types ที่เกี่ยวข้องกับ table ทั้งหมด
 import type { 
   ColumnDef, 
   SortingState, 
@@ -7,10 +8,11 @@ import type {
   GroupingState,
   ColumnSizingState,
   FilterFn,
-  Column
+  Column,
+  Table
 } from '@tanstack/vue-table'
 
-// Export table types สำหรับใช้งานทั่วไป
+// Re-export types สำหรับใช้งานง่าย
 export type {
   ColumnDef,
   SortingState,
@@ -20,10 +22,11 @@ export type {
   GroupingState,
   ColumnSizingState,
   FilterFn,
-  Column
+  Column,
+  Table
 }
 
-// Interface สำหรับ Table Configuration
+// Extended types สำหรับ application
 export interface TableConfig<T> {
   columns: ColumnDef<T>[]
   data: T[]
@@ -31,4 +34,55 @@ export interface TableConfig<T> {
   enableFiltering?: boolean
   enableGrouping?: boolean
   enableColumnResizing?: boolean
+  enableServerSide?: boolean
+  routeName?: string
+  currentPage?: number
+  totalPages?: number
+  perPage?: number
+}
+
+// Filter-related types
+export interface OptionFilter {
+  value: string
+  label: string
+  count: number
+}
+
+export interface RangeFilter {
+  min?: number
+  max?: number
+}
+
+export interface AutocompleteSuggestion {
+  value: string
+  count: number
+}
+
+export interface FilterConfig {
+  successMessage: string
+  clearMessage: string
+  noFilterMessage?: string
+  unit?: string
+  defaultMin?: number
+  defaultMax?: number
+}
+
+// Server-side operation types
+export interface ServerOperationConfig {
+  routeName: string
+  currentPage: number
+  totalPages?: number
+  perPage: number
+  sort?: string
+  direction?: 'asc' | 'desc'
+  extra?: Record<string, any>
+  replace?: boolean
+}
+
+// Toast message types
+export interface ToastConfig {
+  success: string
+  error: string
+  info: string
+  loading: string
 }
