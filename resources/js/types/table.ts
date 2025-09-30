@@ -1,4 +1,3 @@
-// ปรับปรุงให้รวม types ที่เกี่ยวข้องกับ table ทั้งหมด
 import type { 
   ColumnDef, 
   SortingState, 
@@ -11,6 +10,7 @@ import type {
   Column,
   Table
 } from '@tanstack/vue-table'
+import type { Ref, ComputedRef } from 'vue'
 
 // Re-export types สำหรับใช้งานง่าย
 export type {
@@ -25,6 +25,10 @@ export type {
   Column,
   Table
 }
+
+// Helper types สำหรับ reactive values
+export type MaybeRef<T> = T | Ref<T>
+export type MaybeRefOrGetter<T> = T | Ref<T> | ComputedRef<T> | (() => T)
 
 // Extended types สำหรับ application
 export interface TableConfig<T> {
@@ -67,15 +71,15 @@ export interface FilterConfig {
   defaultMax?: number
 }
 
-// Server-side operation types
+// Server-side operation types - ปรับให้รองรับ reactive values
 export interface ServerOperationConfig {
   routeName: string
-  currentPage: number
-  totalPages?: number
-  perPage: number
-  sort?: string
-  direction?: 'asc' | 'desc'
-  extra?: Record<string, any>
+  currentPage: MaybeRefOrGetter<number>
+  totalPages?: MaybeRefOrGetter<number>
+  perPage: MaybeRefOrGetter<number>
+  sort?: MaybeRefOrGetter<string>
+  direction?: MaybeRefOrGetter<'asc' | 'desc'>
+  extra?: MaybeRefOrGetter<Record<string, any>>
   replace?: boolean
 }
 
