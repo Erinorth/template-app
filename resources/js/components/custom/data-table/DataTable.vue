@@ -1,7 +1,8 @@
+<!-- ไฟล์: resources/js/components/custom/data-table/DataTable.vue -->
 <script setup lang="ts" generic="TData">
-// comment: import ref จาก 'vue' เพื่อแก้ปัญหา ReferenceError: ref is not defined
+import { computed, unref, type Ref } from 'vue'
 import type { ColumnDef } from '@tanstack/vue-table'
-import { FlexRender, getCoreRowModel, getSortedRowModel, useVueTable } from '@tanstack/vue-table'
+import { FlexRender, getCoreRowModel, useVueTable } from '@tanstack/vue-table'
 import {
   Table,
   TableHeader,
@@ -10,14 +11,20 @@ import {
   TableBody,
   TableCell,
 } from '@/components/ui/table'
+import { Skeleton } from '@/components/ui/skeleton'
 
-// comment: รับ props columns และ data
-const props = defineProps<{
+// Props รวม loading state
+interface Props {
   columns: ColumnDef<TData, any>[]
   data: TData[]
-}>()
+  loading?: boolean | Ref<boolean>
+}
 
-// comment: ใช้งาน useVueTable จาก tanstack-table
+const props = withDefaults(defineProps<Props>(), {
+  loading: false
+})
+
+// ใช้งาน useVueTable จาก tanstack-table
 const table = useVueTable({
   get data() {
     return props.data
@@ -27,10 +34,12 @@ const table = useVueTable({
   },
   getCoreRowModel: getCoreRowModel(),
 })
+
+const isLoading = computed(() => unref(props.loading) ?? false)
 </script>
 
 <template>
-  <!-- comment: โครงสร้างตาราง UI -->
+  <!-- โครงสร้างตาราง UI -->
   <div class="border rounded-md">
     <Table>
       <TableHeader>
@@ -52,7 +61,17 @@ const table = useVueTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        <template v-if="table.getRowModel().rows?.length">
+        <!-- Loading State -->
+        <template v-if="isLoading">
+          <TableRow v-for="i in 5" :key="`loading-${i}`">
+            <TableCell v-for="j in props.columns.length" :key="`loading-cell-${j}`">
+              <Skeleton class="h-4 w-full" />
+            </TableCell>
+          </TableRow>
+        </template>
+        
+        <!-- ข้อมูลปกติ -->
+        <template v-else-if="table.getRowModel().rows?.length">
           <TableRow v-for="row in table.getRowModel().rows" :key="row.id">
             <TableCell v-for="cell in row.getVisibleCells()" :key="cell.id">
               <FlexRender
@@ -62,6 +81,8 @@ const table = useVueTable({
             </TableCell>
           </TableRow>
         </template>
+        
+        <!-- ไม่มีข้อมูล -->
         <template v-else>
           <TableRow>
             <TableCell :colspan="props.columns.length" class="h-24 text-center">
