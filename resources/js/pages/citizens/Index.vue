@@ -12,9 +12,8 @@ import type { LengthAwarePaginator } from '@/types/pagination'
 import { useCitizenColumns } from '@/composables/useCitizenColumns'
 import { useServerSort } from '@/composables/useServerSort'
 import { useServerPagination } from '@/composables/useServerPagination'
-import { computed, ref, watch } from 'vue'
-import { router, usePage } from '@inertiajs/vue3'
-import { useDebounce } from '@/composables/useDebounce'   // <-- นำเข้า debounce
+import { computed, ref } from 'vue'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps<{
   title: string
@@ -29,36 +28,30 @@ const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Citizens', href: '/citizens' },
 ]
 
-// state สำหรับ search input (ไม่เด้งทันที)
+// Search state - เก็บเฉพาะค่าปัจจุบัน
 const search = ref(props.query?.search ?? '')
 
-// ใช้ debounce โดย delay 400ms (ปรับตามต้องการ)
-const debouncedSearch = useDebounce(search.value, 400)
-
-watch(search, (val) => {
-  // sync debounce source กับ ref ที่ใช้ watcher
-  debouncedSearch.value = val
-})
-
-watch(debouncedSearch, val => {
-  // รีเควส server ก็ต่อเมื่อ search หยุดนิ่ง
+// ฟังก์ชัน handle search จาก DataTableSearch
+function handleSearch(searchValue: string) {
   router.get(route('citizens.index'), { 
-    search: val,
+    search: searchValue,
     sort: props.sort,
     direction: props.direction,
     per_page: props.citizens.per_page,
-    page: 1,
+    page: 1, // reset เป็นหน้า 1 เมื่อ search
   }, {
     preserveState: true,
     replace: true,
     preserveScroll: true,
   })
-})
+}
 
+// Server sort และ pagination logic
 const currentSort = computed(() => props.sort)
 const currentDirection = computed(() => props.direction)
 const currentPage = computed(() => props.citizens.current_page)
 const perPage = computed(() => props.citizens.per_page)
+
 const { onSort } = useServerSort({
   routeName: 'citizens.index',
   sort: currentSort,
@@ -66,11 +59,13 @@ const { onSort } = useServerSort({
   currentPage,
   perPage,
 })
+
 const { columns } = useCitizenColumns({
   onSort,
   currentSort: currentSort.value,
   currentDirection: currentDirection.value,
 })
+
 const { goPage, changePageSize } = useServerPagination({
   routeName: 'citizens.index',
   currentPage: currentPage.value,
@@ -86,7 +81,7 @@ const { goPage, changePageSize } = useServerPagination({
       <HeaderWithTitle
         :title="props.title ?? 'Citizens'"
         subtitle="ข้อมูลประชาชนในระบบ"
-        description="ตารางโหมดง่าย + แบ่งหน้าฝั่งเซิร์ฟเวอร์"
+        description="ตารางโหมดง่าย + แบ่งหน้าฝั่งเซิร์ฟเวอร์ พร้อม debounced search"
         badge="รายการ"
         badge-variant="secondary"
         size="lg"
@@ -99,15 +94,20 @@ const { goPage, changePageSize } = useServerPagination({
           </Button>
         </template>
       </HeaderWithTitle>
+      
       <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <DataTableSearch
           v-model="search"
           :columns="['citizen_id','remark','birth_date','id']"
-          placeholder="ค้นหา..."
+          :debounce-delay="400"
+          placeholder="ค้นหาข้อมูลประชาชน..."
+          @search="handleSearch"
         />
         <div class="flex-1"></div>
       </div>
+      
       <DataTable :columns="columns" :data="props.citizens.data" />
+      
       <DataTablePagination
         :total="props.citizens.total"
         :current-page="props.citizens.current_page"
@@ -125,8 +125,9 @@ const { goPage, changePageSize } = useServerPagination({
 </template>
 
 <!--
-คอมเมนต์: 
-- เพิ่มการ debounce สำหรับ search input ก่อนยิง request ไป server
-- ลดการทำงาน server ถี่เกิน จำเป็นสำหรับ UX ทีม data-table ที่มี search
-- สามารถปรับเวลาหน่วง (delay) ตามความเหมาะสม
+คอมเมนต์:
+- ลบ useDebounce และ watch logic ออก เพื่อความเรียบง่าย
+- ใช้ handleSearch เพื่อจัดการการค้นหาจาก DataTableSearch
+- โค้ดสะอาดขึ้น เข้าใจง่ายขึ้น ตามหลัก single responsibility
+- DataTableSearch รับผิดชอบ debounce logic ทั้งหมด
 -->

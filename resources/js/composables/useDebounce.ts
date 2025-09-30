@@ -1,28 +1,31 @@
-// --- ไฟล์: resources/js/composables/useDebounce.ts ---
-import { ref, watch } from 'vue'
+import { shallowRef, watch, type Ref } from 'vue'
 
 /**
- * ใช้สำหรับ debounce ค่า งาน event ต่าง ๆ เช่น search, typing ฯลฯ
- * @param value - ค่า ref ที่ต้องการ debounce
+ * ใช้สำหรับ debounce ค่าของ ref
+ * @param source - ref ที่ต้องการ debounce
  * @param delay - ระยะเวลา ms (เช่น 400)
  */
-export function useDebounce<T>(value: T, delay = 400) {
-  const debounced = ref(value)
-
-  let timeout: ReturnType<typeof setTimeout>
+export function useDebounce<T>(source: Ref<T>, delay = 400): Ref<T> {
+  // ✅ ใช้ shallowRef เพื่อหลีกเลี่ยง UnwrapRef complexity
+  const debounced = shallowRef<T>(source.value)
+  
+  // ✅ ใช้ ReturnType เพื่อให้ TypeScript infer type ที่ถูกต้อง
+  let timeout: ReturnType<typeof setTimeout> | undefined
 
   watch(
-    () => value,
-    (val) => {
-      clearTimeout(timeout)
+    source,
+    (newVal: T) => {
+      if (timeout !== undefined) {
+        clearTimeout(timeout)
+      }
       timeout = setTimeout(() => {
-        debounced.value = val
+        debounced.value = newVal
       }, delay)
     },
-    { immediate: true }
+    { immediate: false }
   )
 
   return debounced
 }
 
-// -- คอมเมนต์ไทย: ใช้สำหรับหน่วงเวลาการ search (debounce) เพื่อไม่ให้ server ทำงานทุก keystroke --
+// คอมเมนต์: ใช้ shallowRef เพื่อหลีกเลี่ยง deep reactivity และ type issues

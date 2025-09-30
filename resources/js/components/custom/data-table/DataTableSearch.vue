@@ -1,28 +1,57 @@
 <script setup lang="ts" generic="T extends object">
-// สร้าง component สำหรับ input search แบบ generic
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Search, X } from 'lucide-vue-next'
+import { useDebounce } from '@/composables/useDebounce'
 
-// props สำหรับ search (รองรับ model generic)
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   modelValue: string
   placeholder?: string
   columns?: (keyof T)[]
-}>()
+  debounceDelay?: number
+}>(), {
+  debounceDelay: 400
+})
+
 const emit = defineEmits<{ 
   (e: 'update:modelValue', val: string): void
+  (e: 'search', val: string): void
   (e: 'clear'): void
 }>()
-// v-model generic
+
+// Internal ref สำหรับ input value
+const internalValue = ref<string>(props.modelValue)
+
+// ✅ ใช้ useDebounce กับ ref โดยตรง (simplified version)
+const debouncedValue = useDebounce(internalValue, props.debounceDelay)
+
+// v-model binding
 const value = computed({
-  get: () => props.modelValue,
-  set: (v) => emit('update:modelValue', v),
+  get: () => internalValue.value,
+  set: (v: string) => {
+    internalValue.value = v
+    emit('update:modelValue', v)
+  },
 })
-// กด clear
+
+// Watch debounced value
+watch(debouncedValue, (newValue: string) => {
+  console.log('🔍 Search debounced:', newValue)
+  emit('search', newValue)
+})
+
+// Sync กับ parent props
+watch(() => props.modelValue, (newValue: string) => {
+  if (internalValue.value !== newValue) {
+    internalValue.value = newValue
+  }
+})
+
 function clear() {
+  internalValue.value = ''
   emit('update:modelValue', '')
+  emit('search', '')
   emit('clear')
 }
 </script>
@@ -37,7 +66,7 @@ function clear() {
         class="pl-10 pr-10"
       />
       <Button
-        v-if="modelValue"
+        v-if="internalValue"
         variant="ghost"
         size="sm"
         @click="clear"
@@ -51,6 +80,7 @@ function clear() {
 
 <!--
 คอมเมนต์:
-- รับผิดชอบเฉพาะการค้นหา แบบ generic ใช้กับ model อื่นได้
-- ไม่ควรมี logic ในหน้าที่อื่นแทรก
+- ใช้ simplified useDebounce ที่รับเฉพาะ Ref
+- เพิ่ม explicit types เพื่อความปลอดภัย
+- ลด TypeScript errors และเพิ่มความชัดเจน
 -->
