@@ -1,5 +1,3 @@
-// resources/js/composables/useColumnBuilder.ts
-
 import { h } from 'vue'
 import { Button } from '@/components/ui/button'
 import type { ColumnDef } from '@tanstack/vue-table'
@@ -40,7 +38,7 @@ export function useColumnBuilder<T>() {
     displayName: string,
     onSort?: (col: string) => void
   ) => {
-    return () =>
+    const headerComponent = () =>
       h(
         Button,
         {
@@ -58,6 +56,11 @@ export function useColumnBuilder<T>() {
           }),
         ]
       )
+    
+    // เก็บ displayName เป็น property เพื่อให้ ViewOption อ่านได้
+    ;(headerComponent as any).displayName = displayName
+    
+    return headerComponent
   }
 
   const createExpandColumn = (header?: string): ColumnDef<T, any> => {
@@ -97,6 +100,10 @@ export function useColumnBuilder<T>() {
       header: options?.sortable ? 
         createSortableHeader(accessorKey as string, header, options.onSort) : 
         header,
+      // เพิ่ม meta เพื่อเก็บชื่อที่แสดงผล
+      meta: {
+        displayName: header
+      },
       enableHiding: options?.enableHiding ?? true, // default ให้ซ่อนได้
       cell: ({ getValue }) => {
         const value = getValue() as string | null | undefined
@@ -127,6 +134,10 @@ export function useColumnBuilder<T>() {
       header: options?.sortable ? 
         createSortableHeader(accessorKey as string, header, options.onSort) : 
         header,
+      // เพิ่ม meta เพื่อเก็บชื่อที่แสดงผล
+      meta: {
+        displayName: header
+      },
       enableHiding: options?.enableHiding ?? true, // default ให้ซ่อนได้
       cell: ({ getValue }) => {
         const value = getValue() as string | null | undefined
@@ -155,6 +166,10 @@ export function useColumnBuilder<T>() {
       header: options?.sortable ? 
         createSortableHeader(accessorKey as string, header, options.onSort) : 
         header,
+      // เพิ่ม meta เพื่อเก็บชื่อที่แสดงผล
+      meta: {
+        displayName: header
+      },
       enableHiding: options?.enableHiding ?? true, // default ให้ซ่อนได้
       cell: ({ getValue }) => {
         const value = getValue() as number | null | undefined
@@ -192,6 +207,10 @@ export function useColumnBuilder<T>() {
       header: options?.sortable ? 
         createSortableHeader(accessorKey as string, header, options.onSort) : 
         header,
+      // เพิ่ม meta เพื่อเก็บชื่อที่แสดงผล
+      meta: {
+        displayName: header
+      },
       enableHiding: options?.enableHiding ?? true, // default ให้ซ่อนได้
       cell: ({ row }) => h(
         'div', 
@@ -213,6 +232,10 @@ export function useColumnBuilder<T>() {
       header: options.sortable ? 
         createSortableHeader(accessorKey as string, header, options.onSort) : 
         header,
+      // เพิ่ม meta เพื่อเก็บชื่อที่แสดงผล
+      meta: {
+        displayName: header
+      },
       enableHiding: options?.enableHiding ?? true, // default ให้ซ่อนได้
       cell: ({ getValue }) => {
         const value = getValue() as string | null | undefined
@@ -244,6 +267,10 @@ export function useColumnBuilder<T>() {
   ): ColumnDef<R, unknown> => ({
     id: 'actions',
     header,
+    // เพิ่ม meta เพื่อความสอดคล้อง
+    meta: {
+      displayName: header || 'Actions'
+    },
     enableSorting: false,
     enableHiding: options?.enableHiding ?? false, // default ไม่ให้ซ่อน actions ได้
     cell: ({ row }) => cellRenderer(row.original as R)
