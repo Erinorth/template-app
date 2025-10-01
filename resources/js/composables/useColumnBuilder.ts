@@ -1,19 +1,40 @@
-// ไฟล์: resources/js/composables/useColumnBuilder.ts
+// resources/js/composables/useColumnBuilder.ts
+
 import { h } from 'vue'
 import { Button } from '@/components/ui/button'
 import type { ColumnDef } from '@tanstack/vue-table'
 import { ArrowUpDown, ChevronRight, ChevronDown } from 'lucide-vue-next'
 import { formatDate, formatDateTime, formatCurrency, formatNumber, truncateText } from '@/lib/utils'
 
-/**
- * Generic column builder สำหรับสร้าง columns ที่ใช้งานได้ทั่วไป
- * รองรับการ sort, format, expanding และ responsive design
- */
+// เพิ่ม interface สำหรับ column options
+interface BaseColumnOptions {
+  sortable?: boolean
+  className?: string
+  onSort?: (col: string) => void
+  enableHiding?: boolean // เพิ่ม option นี้
+}
+
+interface TextColumnOptions extends BaseColumnOptions {
+  maxLength?: number
+}
+
+interface DateColumnOptions extends BaseColumnOptions {
+  includeTime?: boolean
+}
+
+interface NumberColumnOptions extends BaseColumnOptions {
+  currency?: boolean
+  precision?: number
+}
+
+interface IdColumnOptions extends BaseColumnOptions {}
+
+interface StatusColumnOptions extends BaseColumnOptions {
+  statusMapping: Record<string, { label: string; className: string }>
+}
+
 export function useColumnBuilder<T>() {
   
-  /**
-   * สร้าง sortable header
-   */
   const createSortableHeader = (
     columnId: string, 
     displayName: string,
@@ -39,16 +60,13 @@ export function useColumnBuilder<T>() {
       )
   }
 
-  /**
-   * สร้าง expand column แยกเป็น column ที่ 1 (แยกจาก ID column)
-   */
   const createExpandColumn = (header?: string): ColumnDef<T, any> => {
     return {
       id: 'expand',
       header: header || '', // ไม่มี header text หรือใช้ไอคอนเล็กๆ
       size: 50, // กำหนดขนาดแคบ
       enableSorting: false,
-      enableHiding: false,
+      enableHiding: false, // ไม่ให้ซ่อน expand column ได้
       enableResizing: false,
       cell: ({ row }) => {
         return h('div', { class: 'flex justify-center' }, [
@@ -69,24 +87,17 @@ export function useColumnBuilder<T>() {
     }
   }
 
-  /**
-   * สร้าง basic text column
-   */
   const createTextColumn = (
     accessorKey: keyof T,
     header: string,
-    options?: {
-      sortable?: boolean
-      maxLength?: number
-      className?: string
-      onSort?: (col: string) => void
-    }
+    options?: TextColumnOptions
   ): ColumnDef<T, any> => {
     return {
       accessorKey: accessorKey as string,
       header: options?.sortable ? 
         createSortableHeader(accessorKey as string, header, options.onSort) : 
         header,
+      enableHiding: options?.enableHiding ?? true, // default ให้ซ่อนได้
       cell: ({ getValue }) => {
         const value = getValue() as string | null | undefined
         const displayValue = value || '-'
@@ -106,24 +117,17 @@ export function useColumnBuilder<T>() {
     }
   }
 
-  /**
-   * สร้าง date column
-   */
   const createDateColumn = (
     accessorKey: keyof T,
     header: string,
-    options?: {
-      sortable?: boolean
-      includeTime?: boolean
-      className?: string
-      onSort?: (col: string) => void
-    }
+    options?: DateColumnOptions
   ): ColumnDef<T, any> => {
     return {
       accessorKey: accessorKey as string,
       header: options?.sortable ? 
         createSortableHeader(accessorKey as string, header, options.onSort) : 
         header,
+      enableHiding: options?.enableHiding ?? true, // default ให้ซ่อนได้
       cell: ({ getValue }) => {
         const value = getValue() as string | null | undefined
         const displayValue = value ? 
@@ -141,25 +145,17 @@ export function useColumnBuilder<T>() {
     }
   }
 
-  /**
-   * สร้าง number column
-   */
   const createNumberColumn = (
     accessorKey: keyof T,
     header: string,
-    options?: {
-      sortable?: boolean
-      currency?: boolean
-      precision?: number
-      className?: string
-      onSort?: (col: string) => void
-    }
+    options?: NumberColumnOptions
   ): ColumnDef<T, any> => {
     return {
       accessorKey: accessorKey as string,
       header: options?.sortable ? 
         createSortableHeader(accessorKey as string, header, options.onSort) : 
         header,
+      enableHiding: options?.enableHiding ?? true, // default ให้ซ่อนได้
       cell: ({ getValue }) => {
         const value = getValue() as number | null | undefined
         
@@ -186,22 +182,17 @@ export function useColumnBuilder<T>() {
     }
   }
 
-  /**
-   * สร้าง ID column แบบธรรมดา (ไม่มี expand)
-   */
   const createIdColumn = (
     accessorKey: keyof T = 'id' as keyof T,
     header: string = 'ID',
-    options?: {
-      sortable?: boolean
-      onSort?: (col: string) => void
-    }
+    options?: IdColumnOptions
   ): ColumnDef<T, any> => {
     return {
       accessorKey: accessorKey as string,
       header: options?.sortable ? 
         createSortableHeader(accessorKey as string, header, options.onSort) : 
         header,
+      enableHiding: options?.enableHiding ?? true, // default ให้ซ่อนได้
       cell: ({ row }) => h(
         'div', 
         { 
@@ -212,23 +203,17 @@ export function useColumnBuilder<T>() {
     }
   }
 
-  /**
-   * สร้าง status/badge column
-   */
   const createStatusColumn = (
     accessorKey: keyof T,
     header: string,
-    options: {
-      statusMapping: Record<string, { label: string; className: string }>
-      sortable?: boolean
-      onSort?: (col: string) => void
-    }
+    options: StatusColumnOptions
   ): ColumnDef<T, any> => {
     return {
       accessorKey: accessorKey as string,
       header: options.sortable ? 
         createSortableHeader(accessorKey as string, header, options.onSort) : 
         header,
+      enableHiding: options?.enableHiding ?? true, // default ให้ซ่อนได้
       cell: ({ getValue }) => {
         const value = getValue() as string | null | undefined
         const statusConfig = value ? options.statusMapping[value] : null
@@ -252,23 +237,21 @@ export function useColumnBuilder<T>() {
     }
   }
 
-  /**
-   * สร้าง action column
-   */
   const createActionColumn = <R>(
     cellRenderer: (row: R) => any,
-    header = ''
+    header = '',
+    options?: { enableHiding?: boolean }
   ): ColumnDef<R, unknown> => ({
     id: 'actions',
     header,
     enableSorting: false,
-    enableHiding: false,
+    enableHiding: options?.enableHiding ?? false, // default ไม่ให้ซ่อน actions ได้
     cell: ({ row }) => cellRenderer(row.original as R)
   })
 
   return {
     createSortableHeader,
-    createExpandColumn, // ฟังก์ชันใหม่แทนที่ createExpandableIdColumn
+    createExpandColumn, 
     createTextColumn,
     createDateColumn,
     createNumberColumn,

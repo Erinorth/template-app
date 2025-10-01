@@ -8,6 +8,8 @@ import DataTable from '@/components/custom/data-table/DataTable.vue'
 import DataTablePagination from '@/components/custom/data-table/DataTablePagination.vue'
 import DataTableSearch from '@/components/custom/data-table/DataTableSearch.vue'
 import DataTableDropdown from '@/components/custom/data-table/DataTableDropdown.vue'
+// เพิ่ม import DataTableViewOption ที่มีอยู่แล้ว
+import DataTableViewOption from '@/components/custom/data-table/DataTableViewOption.vue'
 import type { Citizen } from '@/types/citizen'
 import type { LengthAwarePaginator } from '@/types/pagination'
 // ใช้ composables ที่จำเป็น
@@ -34,6 +36,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 // Search state
 const search = ref(props.query?.search ?? '')
+
+// เพิ่ม ref สำหรับ DataTable component
+const dataTableRef = ref()
 
 // ใช้ column builder composable
 const { 
@@ -156,45 +161,50 @@ function handleSearch(searchValue: string) {
 // === Columns Definition ===
 
 const columns = computed(() => [
-  // Column ที่ 1: Expand Button
+  // Column ที่ 1: Expand Button - ไม่ให้ซ่อนได้
   createExpandColumn(),
   
-  // Column ที่ 2: ID Column
+  // Column ที่ 2: ID Column - ให้ซ่อนได้
   createIdColumn('id', 'ID', { 
     sortable: true, 
-    onSort: serverOps.onSort 
+    onSort: serverOps.onSort,
+    enableHiding: true
   }),
   
-  // Column ที่ 3: Citizen ID
+  // Column ที่ 3: Citizen ID - ไม่ให้ซ่อนได้ เพราะเป็น column หลัก
   createTextColumn('citizen_id', 'เลขประจำตัวประชาชน', {
     sortable: true,
     className: 'font-mono break-all',
-    onSort: serverOps.onSort
+    onSort: serverOps.onSort,
+    enableHiding: false // column หลัก ไม่ให้ซ่อน
   }),
   
-  // Column ที่ 4: Birth date
+  // Column ที่ 4: Birth date - ให้ซ่อนได้
   createDateColumn('birth_date', 'วันเกิด', {
     sortable: true,
     includeTime: false,
-    onSort: serverOps.onSort
+    onSort: serverOps.onSort,
+    enableHiding: true
   }),
   
-  // Column ที่ 5: Remark
+  // Column ที่ 5: Remark - ให้ซ่อนได้
   createTextColumn('remark', 'หมายเหตุ', {
     sortable: true,
     maxLength: 50,
-    onSort: serverOps.onSort
+    onSort: serverOps.onSort,
+    enableHiding: true
   }),
   
-  // Column ที่ 6: Created at
+  // Column ที่ 6: Created at - ให้ซ่อนได้
   createDateColumn('created_at', 'สร้างเมื่อ', {
     sortable: true,
     includeTime: true,
     className: 'text-gray-600',
-    onSort: serverOps.onSort
+    onSort: serverOps.onSort,
+    enableHiding: true
   }),
 
-  // Column สุดท้าย: Actions
+  // Column สุดท้าย: Actions - ไม่ให้ซ่อนได้
   createActionColumn((citizen: Citizen) => 
     h(DataTableDropdown, {
       item: citizen,
@@ -229,9 +239,13 @@ const columns = computed(() => [
       onEdit: (item: any) => handleEditCitizen(item as Citizen),
       onDelete: (item: any) => handleDeleteCitizen(item as Citizen),
       onAction: (actionKey: string, item: any) => handleCustomAction(actionKey, item as Citizen)
-    })
+    }), '', { enableHiding: false } // ไม่ให้ซ่อน actions column
   )
 ])
+
+// Log สำหรับ debugging
+console.log('Citizens page: Table initialized with', props.citizens.data.length, 'records')
+console.log('Citizens page: Available columns', columns.value.map(col => col.id || 'unnamed'))
 </script>
 
 <template>
@@ -256,24 +270,42 @@ const columns = computed(() => [
         </template>
       </HeaderWithTitle>
       
-      <!-- Search Section -->
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-        <DataTableSearch
-          v-model="search"
-          :columns="['citizen_id','remark','birth_date','id']"
-          :debounce-delay="400"
-          placeholder="ค้นหาข้อมูลประชาชน..."
-          @search="handleSearch"
-        />
-        <div class="flex-1"></div>
+      <!-- Enhanced Toolbar Section -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-4 bg-card rounded-lg border">
+        <!-- Search Section -->
+        <div class="flex-1">
+          <DataTableSearch
+            v-model="search"
+            :columns="['citizen_id','remark','birth_date','id']"
+            :debounce-delay="400"
+            placeholder="ค้นหาข้อมูลประชาชน..."
+            @search="handleSearch"
+          />
+        </div>
+        
+        <!-- Toolbar Actions -->
+        <div class="flex items-center space-x-2">
+          <!-- Summary Info -->
+          <div class="hidden md:flex items-center text-sm text-muted-foreground mr-4">
+            <span>แสดง {{ props.citizens.from }}-{{ props.citizens.to }} จาก {{ props.citizens.total }} รายการ</span>
+          </div>
+          
+          <!-- Column Visibility Control -->
+          <DataTableViewOption 
+            v-if="dataTableRef?.table"
+            :table="dataTableRef.table" 
+          />
+        </div>
       </div>
       
-      <!-- Data Table พร้อม Expanding -->
+      <!-- Data Table พร้อม Expanding และ Column Visibility -->
       <DataTable 
+        ref="dataTableRef"
         :columns="columns" 
         :data="props.citizens.data"
         :loading="serverOps.isLoading"
         :expanded-content="createExpandedContent"
+        class="bg-card rounded-lg border"
       />
       
       <!-- Pagination -->
