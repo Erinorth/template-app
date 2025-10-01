@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button'
 import DataTable from '@/components/custom/data-table/DataTable.vue'
 import DataTablePagination from '@/components/custom/data-table/DataTablePagination.vue'
 import DataTableSearch from '@/components/custom/data-table/DataTableSearch.vue'
+import DataTableDropdown from '@/components/custom/data-table/DataTableDropdown.vue'
 import type { Citizen } from '@/types/citizen'
 import type { LengthAwarePaginator } from '@/types/pagination'
 // ใช้ composables ที่ปรับปรุงแล้ว
 import { useColumnBuilder } from '@/composables/useColumnBuilder'
 import { useServerOperations } from '@/composables/useServerOperations'
-import { computed, ref } from 'vue'
+import { computed, ref, h } from 'vue'
 import { router } from '@inertiajs/vue3'
 
 // Props definition
@@ -84,7 +85,43 @@ const columns = computed(() => [
     includeTime: true,
     className: 'text-gray-600',
     onSort: serverOps.onSort
-  })
+  }),
+
+  /* ---------- คอลัมน์เมนูการทำงาน ---------- */
+  {
+    id: 'actions',
+    header: 'จัดการ',
+    enableSorting: false,
+    enableHiding: false,
+    cell: ({ row }) => {
+      const citizen = row.original as Citizen
+      return h(DataTableDropdown, {
+        item: citizen,            // ระบุตัว record
+        idKey: 'id',
+        nameKey: 'citizen_id',
+        enableCopy: true,
+        enableView: true,
+        enableEdit: true,
+        enableDelete: true,
+        actions: [
+          { key: 'print', label: 'พิมพ์' },
+          { key: 'export', label: 'ส่งออก', separator: true }
+        ],
+        // event emitters
+        onView: (item: Citizen) => router.get(route('citizens.show', item.id)),
+        onEdit: (item: Citizen) => router.get(route('citizens.edit', item.id)),
+        onDelete: (item: Citizen) => router.delete(route('citizens.destroy', item.id)),
+        onAction: (key: string, item: Citizen) => {
+          if (key === 'print') {
+            router.get(route('citizens.print', item.id))
+          }
+          if (key === 'export') {
+            router.get(route('citizens.export', item.id))
+          }
+        }
+      })
+    }
+  }
 ])
 
 // ฟังก์ชัน handle search จาก DataTableSearch
