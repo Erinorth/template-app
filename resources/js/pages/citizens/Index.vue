@@ -15,6 +15,7 @@ import { useColumnBuilder } from '@/composables/useColumnBuilder'
 import { useServerOperations } from '@/composables/useServerOperations'
 import { computed, ref, h } from 'vue'
 import { router } from '@inertiajs/vue3'
+import { toast } from 'vue-sonner'
 
 // Props definition
 const props = defineProps<{
@@ -49,7 +50,50 @@ const serverOps = useServerOperations({
 })
 
 // สร้าง columns โดยใช้ generic column builder
-const { createIdColumn, createTextColumn, createDateColumn } = useColumnBuilder<Citizen>()
+const { createIdColumn, createTextColumn, createDateColumn, createActionColumn } = useColumnBuilder<Citizen>()
+
+// ฟังก์ชันจัดการ actions ของ DataTableDropdown
+function handleViewCitizen(citizen: Citizen) {
+  console.log('View citizen:', citizen)
+  router.get(route('citizens.show', citizen.id))
+}
+
+function handleEditCitizen(citizen: Citizen) {
+  console.log('Edit citizen:', citizen)
+  router.get(route('citizens.edit', citizen.id))
+}
+
+function handleDeleteCitizen(citizen: Citizen) {
+  console.log('Delete citizen:', citizen)
+  // แสดง confirmation dialog หรือเรียก API ลบ
+  if (confirm(`คุณต้องการลบข้อมูลประชาชน ${citizen.citizen_id} หรือไม่?`)) {
+    router.delete(route('citizens.destroy', citizen.id), {
+      onSuccess: () => {
+        toast.success('ลบข้อมูลเรียบร้อยแล้ว')
+      },
+      onError: () => {
+        toast.error('เกิดข้อผิดพลาดในการลบข้อมูล')
+      }
+    })
+  }
+}
+
+function handleCustomAction(actionKey: string, citizen: Citizen) {
+  console.log('Custom action:', actionKey, citizen)
+  
+  switch (actionKey) {
+    case 'print':
+      // Logic สำหรับพิมพ์
+      toast.info(`พิมพ์ข้อมูล ${citizen.citizen_id}`)
+      break
+    case 'export':
+      // Logic สำหรับส่งออก
+      toast.info(`ส่งออกข้อมูล ${citizen.citizen_id}`)
+      break
+    default:
+      console.warn('Unknown action:', actionKey)
+  }
+}
 
 const columns = computed(() => [
   // สร้าง ID column
@@ -87,7 +131,7 @@ const columns = computed(() => [
     onSort: serverOps.onSort
   }),
 
-  /* ---------- คอลัมน์เมนูการทำงาน ---------- */
+  // สร้าง Actions column แบบ manual (แก้ไข type error)
   {
     id: 'actions',
     header: 'จัดการ',
@@ -96,7 +140,7 @@ const columns = computed(() => [
     cell: ({ row }) => {
       const citizen = row.original as Citizen
       return h(DataTableDropdown, {
-        item: citizen,            // ระบุตัว record
+        item: citizen,
         idKey: 'id',
         nameKey: 'citizen_id',
         enableCopy: true,
@@ -104,21 +148,21 @@ const columns = computed(() => [
         enableEdit: true,
         enableDelete: true,
         actions: [
-          { key: 'print', label: 'พิมพ์' },
-          { key: 'export', label: 'ส่งออก', separator: true }
+          {
+            key: 'print',
+            label: 'พิมพ์',
+            separator: true // เพิ่ม separator ก่อน custom actions
+          },
+          {
+            key: 'export',
+            label: 'ส่งออก Excel'
+          }
         ],
-        // event emitters
-        onView: (item: Citizen) => router.get(route('citizens.show', item.id)),
-        onEdit: (item: Citizen) => router.get(route('citizens.edit', item.id)),
-        onDelete: (item: Citizen) => router.delete(route('citizens.destroy', item.id)),
-        onAction: (key: string, item: Citizen) => {
-          if (key === 'print') {
-            router.get(route('citizens.print', item.id))
-          }
-          if (key === 'export') {
-            router.get(route('citizens.export', item.id))
-          }
-        }
+        // Event handlers - แก้ไขให้ type casting
+        onView: (item: any) => handleViewCitizen(item as Citizen),
+        onEdit: (item: any) => handleEditCitizen(item as Citizen),
+        onDelete: (item: any) => handleDeleteCitizen(item as Citizen),
+        onAction: (actionKey: string, item: any) => handleCustomAction(actionKey, item as Citizen)
       })
     }
   }
@@ -211,14 +255,3 @@ function handleSearchDirect(searchValue: string) {
     </div>
   </AppLayout>
 </template>
-
-<!--
-การปรับปรุงสำคัญ:
-✅ รวม useServerSort และ useServerPagination เป็น useServerOperations
-✅ ใช้ useColumnBuilder แทน useCitizenColumns เพื่อความยืดหยุ่น
-✅ เพิ่ม loading state จาก useServerOperations
-✅ ลดความซ้ำซ้อนของโค้ด
-✅ การจัดการ error ที่ดีขึ้นผ่าน useServerOperations
-✅ โครงสร้างโค้ดที่เป็นระเบียบและง่ายต่อการบำรุงรักษา
-✅ รองรับ Responsive Design ตามข้อกำหนด
--->

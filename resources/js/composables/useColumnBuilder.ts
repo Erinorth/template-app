@@ -221,12 +221,24 @@ export function useColumnBuilder<T>() {
     }
   }
 
+  const createActionColumn = <R>(
+    cellRenderer: (row: R) => any,
+    header = 'Actions'
+  ): ColumnDef<R, unknown> => ({
+    id: 'actions',
+    header,
+    enableSorting: false,
+    enableHiding: false,
+    cell: ({ row }) => cellRenderer(row.original as R)
+  })
+
   return {
     createSortableHeader,
     createTextColumn,
     createDateColumn,
     createNumberColumn,
     createIdColumn,
-    createStatusColumn
+    createStatusColumn,
+    createActionColumn
   }
 }
