@@ -10,7 +10,7 @@ import DataTableSearch from '@/components/custom/data-table/DataTableSearch.vue'
 import DataTableDropdown from '@/components/custom/data-table/DataTableDropdown.vue'
 import type { Citizen } from '@/types/citizen'
 import type { LengthAwarePaginator } from '@/types/pagination'
-// ใช้ composables ที่ปรับปรุงแล้ว
+// ใช้ composables ที่จำเป็น
 import { useColumnBuilder } from '@/composables/useColumnBuilder'
 import { useServerOperations } from '@/composables/useServerOperations'
 import { computed, ref, h } from 'vue'
@@ -32,10 +32,19 @@ const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Citizens', href: '/citizens' },
 ]
 
-// Search state - เก็บค่าปัจจุบัน
+// Search state
 const search = ref(props.query?.search ?? '')
 
-// สร้าง server operations instance รวมทั้ง pagination และ sorting
+// ใช้ column builder composable
+const { 
+  createExpandColumn,
+  createIdColumn,
+  createTextColumn, 
+  createDateColumn,
+  createActionColumn 
+} = useColumnBuilder<Citizen>()
+
+// Server operations
 const serverOps = useServerOperations({
   routeName: 'citizens.index',
   currentPage: computed(() => props.citizens.current_page),
@@ -49,23 +58,30 @@ const serverOps = useServerOperations({
   }))
 })
 
-// สร้าง columns โดยใช้ generic column builder
-const { createIdColumn, createTextColumn, createDateColumn, createActionColumn } = useColumnBuilder<Citizen>()
+// === Citizen Actions (inline functions) ===
 
-// ฟังก์ชันจัดการ actions ของ DataTableDropdown
+/**
+ * ฟังก์ชันดูข้อมูลประชาชน
+ */
 function handleViewCitizen(citizen: Citizen) {
   console.log('View citizen:', citizen)
   router.get(route('citizens.show', citizen.id))
 }
 
+/**
+ * ฟังก์ชันแก้ไขข้อมูลประชาชน
+ */
 function handleEditCitizen(citizen: Citizen) {
   console.log('Edit citizen:', citizen)
   router.get(route('citizens.edit', citizen.id))
 }
 
+/**
+ * ฟังก์ชันลบข้อมูลประชาชน
+ */
 function handleDeleteCitizen(citizen: Citizen) {
   console.log('Delete citizen:', citizen)
-  // แสดง confirmation dialog หรือเรียก API ลบ
+  
   if (confirm(`คุณต้องการลบข้อมูลประชาชน ${citizen.citizen_id} หรือไม่?`)) {
     router.delete(route('citizens.destroy', citizen.id), {
       onSuccess: () => {
@@ -78,6 +94,9 @@ function handleDeleteCitizen(citizen: Citizen) {
   }
 }
 
+/**
+ * ฟังก์ชันจัดการ custom actions
+ */
 function handleCustomAction(actionKey: string, citizen: Citizen) {
   console.log('Custom action:', actionKey, citizen)
   
@@ -90,89 +109,41 @@ function handleCustomAction(actionKey: string, citizen: Citizen) {
       // Logic สำหรับส่งออก
       toast.info(`ส่งออกข้อมูล ${citizen.citizen_id}`)
       break
+    case 'generateCard':
+      // Logic เฉพาะการสร้างบัตรประชาชน
+      toast.info(`สร้างบัตรสำหรับ ${citizen.citizen_id}`)
+      // router.post(route('citizen-cards.generate', citizen.id))
+      break
+    case 'viewHistory':
+      // Logic เฉพาะการดูประวัติ
+      toast.info(`ดูประวัติของ ${citizen.citizen_id}`)
+      // router.get(route('citizens.history', citizen.id))
+      break
     default:
       console.warn('Unknown action:', actionKey)
   }
 }
 
-const columns = computed(() => [
-  // สร้าง ID column
-  createIdColumn('id', 'ID', { 
-    sortable: true, 
-    onSort: serverOps.onSort 
-  }),
-  
-  // สร้าง citizen ID column
-  createTextColumn('citizen_id', 'เลขประจำตัวประชาชน', {
-    sortable: true,
-    className: 'font-mono break-all',
-    onSort: serverOps.onSort
-  }),
-  
-  // สร้าง birth date column
-  createDateColumn('birth_date', 'วันเกิด', {
-    sortable: true,
-    includeTime: false,
-    onSort: serverOps.onSort
-  }),
-  
-  // สร้าง remark column
-  createTextColumn('remark', 'หมายเหตุ', {
-    sortable: true,
-    maxLength: 50, // จำกัดความยาวที่แสดง
-    onSort: serverOps.onSort
-  }),
-  
-  // สร้าง created_at column
-  createDateColumn('created_at', 'สร้างเมื่อ', {
-    sortable: true,
-    includeTime: true,
-    className: 'text-gray-600',
-    onSort: serverOps.onSort
-  }),
+/**
+ * ฟังก์ชันสร้างเนื้อหาสำหรับ expanded row
+ */
+function createExpandedContent(citizen: Citizen): string {
+  return `รหัสประชาชน: ${citizen.citizen_id}
+วันเกิด: ${citizen.birth_date}
+หมายเหตุ: ${citizen.remark || 'ไม่มี'}
+สร้างเมื่อ: ${citizen.created_at}
+อัปเดตเมื่อ: ${citizen.updated_at || 'ไม่มี'}
+รหัสระบบ: ${citizen.id}`
+}
 
-  // สร้าง Actions column แบบ manual (แก้ไข type error)
-  {
-    id: 'actions',
-    header: 'จัดการ',
-    enableSorting: false,
-    enableHiding: false,
-    cell: ({ row }) => {
-      const citizen = row.original as Citizen
-      return h(DataTableDropdown, {
-        item: citizen,
-        idKey: 'id',
-        nameKey: 'citizen_id',
-        enableCopy: true,
-        enableView: true,
-        enableEdit: true,
-        enableDelete: true,
-        actions: [
-          {
-            key: 'print',
-            label: 'พิมพ์',
-            separator: true // เพิ่ม separator ก่อน custom actions
-          },
-          {
-            key: 'export',
-            label: 'ส่งออก Excel'
-          }
-        ],
-        // Event handlers - แก้ไขให้ type casting
-        onView: (item: any) => handleViewCitizen(item as Citizen),
-        onEdit: (item: any) => handleEditCitizen(item as Citizen),
-        onDelete: (item: any) => handleDeleteCitizen(item as Citizen),
-        onAction: (actionKey: string, item: any) => handleCustomAction(actionKey, item as Citizen)
-      })
-    }
-  }
-])
+// === Search Handler ===
 
-// ฟังก์ชัน handle search จาก DataTableSearch
+/**
+ * ฟังก์ชัน handle search
+ */
 function handleSearch(searchValue: string) {
   search.value = searchValue
   
-  // ใช้ makeRequest จาก useServerOperations
   serverOps.makeRequest({
     search: searchValue,
     sort: props.sort,
@@ -182,20 +153,85 @@ function handleSearch(searchValue: string) {
   })
 }
 
-// Alternative approach: ใช้ router โดยตรง (ถ้าต้องการความเรียบง่าย)
-function handleSearchDirect(searchValue: string) {
-  router.get(route('citizens.index'), { 
-    search: searchValue,
-    sort: props.sort,
-    direction: props.direction,
-    per_page: props.citizens.per_page,
-    page: 1,
-  }, {
-    preserveState: true,
-    replace: true,
-    preserveScroll: true,
-  })
-}
+// === Columns Definition ===
+
+const columns = computed(() => [
+  // Column ที่ 1: Expand Button
+  createExpandColumn(),
+  
+  // Column ที่ 2: ID Column
+  createIdColumn('id', 'ID', { 
+    sortable: true, 
+    onSort: serverOps.onSort 
+  }),
+  
+  // Column ที่ 3: Citizen ID
+  createTextColumn('citizen_id', 'เลขประจำตัวประชาชน', {
+    sortable: true,
+    className: 'font-mono break-all',
+    onSort: serverOps.onSort
+  }),
+  
+  // Column ที่ 4: Birth date
+  createDateColumn('birth_date', 'วันเกิด', {
+    sortable: true,
+    includeTime: false,
+    onSort: serverOps.onSort
+  }),
+  
+  // Column ที่ 5: Remark
+  createTextColumn('remark', 'หมายเหตุ', {
+    sortable: true,
+    maxLength: 50,
+    onSort: serverOps.onSort
+  }),
+  
+  // Column ที่ 6: Created at
+  createDateColumn('created_at', 'สร้างเมื่อ', {
+    sortable: true,
+    includeTime: true,
+    className: 'text-gray-600',
+    onSort: serverOps.onSort
+  }),
+
+  // Column สุดท้าย: Actions
+  createActionColumn((citizen: Citizen) => 
+    h(DataTableDropdown, {
+      item: citizen,
+      idKey: 'id',
+      nameKey: 'citizen_id',
+      enableCopy: true,
+      enableView: true,
+      enableEdit: true,
+      enableDelete: true,
+      actions: [
+        {
+          key: 'generateCard',
+          label: 'สร้างบัตร',
+          separator: true
+        },
+        {
+          key: 'viewHistory',
+          label: 'ดูประวัติ'
+        },
+        {
+          key: 'print',
+          label: 'พิมพ์',
+          separator: true
+        },
+        {
+          key: 'export',
+          label: 'ส่งออก Excel'
+        }
+      ],
+      // Event handlers
+      onView: (item: any) => handleViewCitizen(item as Citizen),
+      onEdit: (item: any) => handleEditCitizen(item as Citizen),
+      onDelete: (item: any) => handleDeleteCitizen(item as Citizen),
+      onAction: (actionKey: string, item: any) => handleCustomAction(actionKey, item as Citizen)
+    })
+  )
+])
 </script>
 
 <template>
@@ -206,7 +242,7 @@ function handleSearchDirect(searchValue: string) {
       <HeaderWithTitle
         :title="props.title ?? 'Citizens'"
         subtitle="ข้อมูลประชาชนในระบบ"
-        description="ตารางโหมดง่าย + แบ่งหน้าฝั่งเซิร์ฟเวอร์ พร้อม debounced search"
+        description="ตารางโหมดง่าย + แบ่งหน้าฝั่งเซิร์ฟเวอร์ พร้อม debounced search และ expanding rows"
         badge="รายการ"
         badge-variant="secondary"
         size="lg"
@@ -232,11 +268,12 @@ function handleSearchDirect(searchValue: string) {
         <div class="flex-1"></div>
       </div>
       
-      <!-- Data Table -->
+      <!-- Data Table พร้อม Expanding -->
       <DataTable 
         :columns="columns" 
         :data="props.citizens.data"
         :loading="serverOps.isLoading"
+        :expanded-content="createExpandedContent"
       />
       
       <!-- Pagination -->

@@ -1,12 +1,13 @@
+// ไฟล์: resources/js/composables/useColumnBuilder.ts
 import { h } from 'vue'
 import { Button } from '@/components/ui/button'
 import type { ColumnDef } from '@tanstack/vue-table'
-import { ArrowUpDown } from 'lucide-vue-next'
+import { ArrowUpDown, ChevronRight, ChevronDown } from 'lucide-vue-next'
 import { formatDate, formatDateTime, formatCurrency, formatNumber, truncateText } from '@/lib/utils'
 
 /**
  * Generic column builder สำหรับสร้าง columns ที่ใช้งานได้ทั่วไป
- * รองรับการ sort, format, และ responsive design
+ * รองรับการ sort, format, expanding และ responsive design
  */
 export function useColumnBuilder<T>() {
   
@@ -36,6 +37,36 @@ export function useColumnBuilder<T>() {
           }),
         ]
       )
+  }
+
+  /**
+   * สร้าง expand column แยกเป็น column ที่ 1 (แยกจาก ID column)
+   */
+  const createExpandColumn = (header?: string): ColumnDef<T, any> => {
+    return {
+      id: 'expand',
+      header: header || '', // ไม่มี header text หรือใช้ไอคอนเล็กๆ
+      size: 50, // กำหนดขนาดแคบ
+      enableSorting: false,
+      enableHiding: false,
+      enableResizing: false,
+      cell: ({ row }) => {
+        return h('div', { class: 'flex justify-center' }, [
+          h(Button, {
+            variant: 'ghost',
+            size: 'sm',
+            onClick: () => row.toggleExpanded(),
+            class: 'p-1 h-7 w-7 flex items-center justify-center hover:bg-gray-100 rounded-md transition-colors',
+            'aria-label': row.getIsExpanded() ? 'ย่อแถว' : 'ขยายแถว',
+            title: row.getIsExpanded() ? 'ย่อแถว' : 'ขยายแถว'
+          }, () => [
+            h(row.getIsExpanded() ? ChevronDown : ChevronRight, { 
+              class: 'h-4 w-4 text-gray-500' 
+            })
+          ])
+        ])
+      },
+    }
   }
 
   /**
@@ -156,7 +187,7 @@ export function useColumnBuilder<T>() {
   }
 
   /**
-   * สร้าง ID column (สำหรับ primary key)
+   * สร้าง ID column แบบธรรมดา (ไม่มี expand)
    */
   const createIdColumn = (
     accessorKey: keyof T = 'id' as keyof T,
@@ -221,9 +252,12 @@ export function useColumnBuilder<T>() {
     }
   }
 
+  /**
+   * สร้าง action column
+   */
   const createActionColumn = <R>(
     cellRenderer: (row: R) => any,
-    header = 'Actions'
+    header = ''
   ): ColumnDef<R, unknown> => ({
     id: 'actions',
     header,
@@ -234,6 +268,7 @@ export function useColumnBuilder<T>() {
 
   return {
     createSortableHeader,
+    createExpandColumn, // ฟังก์ชันใหม่แทนที่ createExpandableIdColumn
     createTextColumn,
     createDateColumn,
     createNumberColumn,

@@ -4,4 +4,5 @@ export type Citizen = {
   birth_date: string | null
   remark?: string | null
   created_at?: string | null
+  updated_at?: string | null
 }
