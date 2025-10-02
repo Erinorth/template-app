@@ -1,110 +1,132 @@
-// resources/js/pages/citizens/useCitizens.ts
-import { router } from '@inertiajs/vue3'
+import { useCrudOperations } from '@/composables/useCrudOperations'
+import { useExpandedContent } from '@/composables/useExpandedContent'
 import { toast } from 'vue-sonner'
 import type { Citizen, CitizenActionKey } from './types'
 
-/**
- * Composable สำหรับการจัดการข้อมูลประชาชน
- * รวบรวม logic ทั้งหมดที่เกี่ยวข้องกับ citizen operations
- */
 export function useCitizens() {
-  /**
-   * ฟังก์ชันดูข้อมูลประชาชน
-   */
-  function viewCitizen(citizen: Citizen) {
-    console.log('View citizen:', citizen)
-    router.get(route('citizens.show', citizen.id))
-  }
-
-  /**
-   * ฟังก์ชันแก้ไขข้อมูลประชาชน
-   */
-  function editCitizen(citizen: Citizen) {
-    console.log('Edit citizen:', citizen)
-    router.get(route('citizens.edit', citizen.id))
-  }
-
-  /**
-   * ฟังก์ชันลบข้อมูลประชาชน
-   */
-  function deleteCitizen(citizen: Citizen) {
-    console.log('Delete citizen:', citizen)
-    
-    const citizenId = citizen.citizen_id || `ID: ${citizen.id}`
-    
-    if (confirm(`คุณต้องการลบข้อมูลประชาชน ${citizenId} หรือไม่?`)) {
-      router.delete(route('citizens.destroy', citizen.id), {
-        onSuccess: () => {
-          toast.success('ลบข้อมูลเรียบร้อยแล้ว')
-        },
-        onError: (errors) => {
-          console.error('Delete citizen error:', errors)
-          toast.error('เกิดข้อผิดพลาดในการลบข้อมูล')
+  // กำหนดค่า CRUD operations สำหรับ Citizens
+  const crudConfig = {
+    routePrefix: 'citizens',
+    entityDisplayName: 'ข้อมูลประชาชน',
+    displayField: 'citizen_id' as keyof Citizen,
+    customActions: {
+      print: {
+        label: 'พิมพ์',
+        handler: async (citizen: Citizen) => {
+          const displayName = citizen.citizen_id || `ID: ${citizen.id}`
+          console.log('Printing citizen data:', { id: citizen.id, citizen_id: citizen.citizen_id })
+          toast.info(`กำลังพิมพ์ข้อมูล ${displayName}`)
+          // TODO: เพิ่มการพิมพ์จริง
         }
-      })
+      },
+      export: {
+        label: 'ส่งออก',
+        handler: async (citizen: Citizen) => {
+          const displayName = citizen.citizen_id || `ID: ${citizen.id}`
+          console.log('Exporting citizen data:', { id: citizen.id, citizen_id: citizen.citizen_id })
+          toast.info(`กำลังส่งออกข้อมูล ${displayName}`)
+          // TODO: เพิ่มการส่งออกจริง
+        }
+      },
+      generateCard: {
+        label: 'สร้างบัตร',
+        handler: async (citizen: Citizen) => {
+          const displayName = citizen.citizen_id || `ID: ${citizen.id}`
+          console.log('Generating card for citizen:', { id: citizen.id, citizen_id: citizen.citizen_id })
+          toast.info(`กำลังสร้างบัตรสำหรับ ${displayName}`)
+          // TODO: เพิ่มการสร้างบัตรจริง
+        }
+      },
+      viewHistory: {
+        label: 'ดูประวัติ',
+        handler: async (citizen: Citizen) => {
+          const displayName = citizen.citizen_id || `ID: ${citizen.id}`
+          console.log('Viewing citizen history:', { id: citizen.id, citizen_id: citizen.citizen_id })
+          toast.info(`กำลังเปิดประวัติของ ${displayName}`)
+          // TODO: เพิ่มการดูประวัติจริง
+        }
+      }
+    },
+    messages: {
+      deleteConfirm: 'คุณต้องการลบข้อมูลประชาชนนี้หรือไม่?',
+      deleteSuccess: 'ลบข้อมูลประชาชนเรียบร้อยแล้ว',
+      deleteError: 'เกิดข้อผิดพลาดในการลบข้อมูลประชาชน'
     }
   }
 
-  /**
-   * ฟังก์ชันจัดการ custom actions
-   */
-  function handleCustomAction(actionKey: CitizenActionKey, citizen: Citizen) {
-    console.log('Custom action:', actionKey, citizen)
-    
-    const citizenId = citizen.citizen_id || `ID: ${citizen.id}`
-    
-    switch (actionKey) {
-      case 'print':
-        // Logic สำหรับพิมพ์
-        toast.info(`กำลังพิมพ์ข้อมูล ${citizenId}`)
-        // เรียก API สำหรับพิมพ์
-        // router.post(route('citizens.print', citizen.id))
-        break
-        
-      case 'export':
-        // Logic สำหรับส่งออก
-        toast.info(`กำลังส่งออกข้อมูล ${citizenId}`)
-        // เรียก API สำหรับส่งออก Excel
-        // window.open(route('citizens.export', citizen.id))
-        break
-        
-      case 'generateCard':
-        // Logic เฉพาะการสร้างบัตรประชาชน
-        toast.info(`กำลังสร้างบัตรสำหรับ ${citizenId}`)
-        // router.post(route('citizen-cards.generate', citizen.id))
-        break
-        
-      case 'viewHistory':
-        // Logic เฉพาะการดูประวัติ
-        toast.info(`กำลังเปิดประวัติของ ${citizenId}`)
-        // router.get(route('citizens.history', citizen.id))
-        break
-        
-      default:
-        console.warn('Unknown action:', actionKey)
-        toast.error('ไม่พบคำสั่งที่ระบุ')
-    }
+  // ใช้ generic CRUD operations
+  const { 
+    viewItem: viewCitizen, 
+    editItem: editCitizen, 
+    deleteItem: deleteCitizen, 
+    handleCustomAction 
+  } = useCrudOperations<Citizen>(crudConfig)
+
+  // กำหนดค่าสำหรับ expanded content พร้อม formatter
+  const expandedConfig = {
+    fields: [
+      { 
+        key: 'citizen_id' as keyof Citizen, 
+        label: 'รหัสประชาชน',
+        formatter: (value: string | null) => value || 'ไม่มีรหัส'
+      },
+      { 
+        key: 'birth_date' as keyof Citizen, 
+        label: 'วันเกิด',
+        formatter: (value: string | null) => {
+          if (!value) return 'ไม่ระบุ'
+          return new Date(value).toLocaleDateString('th-TH', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })
+        }
+      },
+      { 
+        key: 'remark' as keyof Citizen, 
+        label: 'หมายเหตุ',
+        formatter: (value: string | null) => value || 'ไม่มีหมายเหตุ'
+      },
+      { 
+        key: 'created_at' as keyof Citizen, 
+        label: 'สร้างเมื่อ',
+        formatter: (value: string | null) => {
+          if (!value) return 'ไม่ระบุ'
+          return new Date(value).toLocaleString('th-TH')
+        }
+      },
+      { 
+        key: 'updated_at' as keyof Citizen, 
+        label: 'อัปเดตเมื่อ',
+        formatter: (value: string | null) => {
+          if (!value) return 'ไม่เคยอัปเดต'
+          return new Date(value).toLocaleString('th-TH')
+        }
+      },
+      { 
+        key: 'id' as keyof Citizen, 
+        label: 'รหัสระบบ',
+        formatter: (value: number | string) => `#${value}`
+      }
+    ]
   }
 
-  /**
-   * ฟังก์ชันสร้างเนื้อหาสำหรับ expanded row
-   */
-  function createExpandedContent(citizen: Citizen): string {
-    return `รหัสประชาชน: ${citizen.citizen_id || 'ไม่มีข้อมูล'}
-วันเกิด: ${citizen.birth_date || 'ไม่มีข้อมูล'}
-หมายเหตุ: ${citizen.remark || 'ไม่มี'}
-สร้างเมื่อ: ${citizen.created_at || 'ไม่มีข้อมูล'}
-อัปเดตเมื่อ: ${citizen.updated_at || 'ไม่มีข้อมูล'}
-รหัสระบบ: ${citizen.id}`
+  // ใช้ generic expanded content
+  const { createExpandedContent } = useExpandedContent<Citizen>(expandedConfig)
+
+  // Wrapper function สำหรับ custom action เพื่อให้เข้ากับ type เดิม
+  const handleCitizenCustomAction = (actionKey: CitizenActionKey, citizen: Citizen) => {
+    console.log('Handling citizen custom action:', { actionKey, citizenId: citizen.id })
+    return handleCustomAction(actionKey, citizen)
   }
 
   return {
-    // Actions
+    // CRUD operations
     viewCitizen,
     editCitizen,
     deleteCitizen,
-    handleCustomAction,
-    // Utilities
+    handleCustomAction: handleCitizenCustomAction,
+    // Expanded content
     createExpandedContent
   }
 }
