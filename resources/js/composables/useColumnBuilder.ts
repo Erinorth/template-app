@@ -1,15 +1,18 @@
-import { h } from 'vue'
+import { h, computed, type ComputedRef, type Component } from 'vue'
 import { Button } from '@/components/ui/button'
+import { DataTableDropdown } from '@/components/custom/data-table'
 import type { ColumnDef } from '@tanstack/vue-table'
 import { ArrowUpDown, ChevronRight, ChevronDown } from 'lucide-vue-next'
 import { formatDate, formatDateTime, formatCurrency, formatNumber, truncateText } from '@/lib/utils'
+import type { TableColumn } from '@/types/table'
 
-// เพิ่ม interface สำหรับ column options
+// ======= TYPES & INTERFACES =======
+
 interface BaseColumnOptions {
   sortable?: boolean
   className?: string
   onSort?: (col: string) => void
-  enableHiding?: boolean // เพิ่ม option นี้
+  enableHiding?: boolean 
 }
 
 interface TextColumnOptions extends BaseColumnOptions {
@@ -31,7 +34,94 @@ interface StatusColumnOptions extends BaseColumnOptions {
   statusMapping: Record<string, { label: string; className: string }>
 }
 
-export function useColumnBuilder<T>() {
+// Configuration-based column types
+interface BaseColumnConfig {
+  key: string
+  header: string
+  sortable?: boolean
+  enableHiding?: boolean
+  className?: string
+}
+
+interface TextColumnConfig extends BaseColumnConfig {
+  type: 'text'
+  maxLength?: number
+}
+
+interface DateColumnConfig extends BaseColumnConfig {
+  type: 'date'
+  includeTime?: boolean
+}
+
+interface NumberColumnConfig extends BaseColumnConfig {
+  type: 'number'
+  currency?: boolean
+  precision?: number
+}
+
+interface IdColumnConfig extends BaseColumnConfig {
+  type: 'id'
+}
+
+interface StatusColumnConfig extends BaseColumnConfig {
+  type: 'status'
+  statusMapping: Record<string, { label: string; className: string }>
+}
+
+interface ExpandColumnConfig {
+  type: 'expand'
+  header?: string
+}
+
+interface ActionColumnConfig {
+  type: 'action'
+  header?: string
+  enableHiding?: boolean
+  idKey?: string
+  nameKey?: string
+  enableCopy?: boolean
+  enableView?: boolean
+  enableEdit?: boolean
+  enableDelete?: boolean
+  enableDownload?: boolean
+  customActions?: Array<{
+    key: string
+    label: string
+    icon?: Component
+    variant?: 'default' | 'destructive' | 'ghost'
+    className?: string
+    disabled?: boolean
+    visible?: boolean
+    separator?: boolean
+  }>
+}
+
+type ColumnConfig = 
+  | TextColumnConfig 
+  | DateColumnConfig 
+  | NumberColumnConfig 
+  | IdColumnConfig 
+  | StatusColumnConfig 
+  | ExpandColumnConfig
+  | ActionColumnConfig
+
+interface ColumnCallbacks<T> {
+  onSort?: (field: string) => void
+  onView?: (item: T) => void
+  onEdit?: (item: T) => void
+  onDelete?: (item: T) => void
+  onCustomAction?: (actionKey: string, item: T) => void
+}
+
+// ======= MAIN COMPOSABLE =======
+
+/**
+ * All-in-One Column Builder Composable
+ * รองรับทั้งการสร้าง column แบบ manual และ configuration-based
+ */
+export function useColumnBuilder<T extends Record<string, any>>() {
+  
+  // ======= HELPER FUNCTIONS =======
   
   const createSortableHeader = (
     columnId: string, 
@@ -57,19 +147,19 @@ export function useColumnBuilder<T>() {
         ]
       )
     
-    // เก็บ displayName เป็น property เพื่อให้ ViewOption อ่านได้
     ;(headerComponent as any).displayName = displayName
-    
     return headerComponent
   }
+
+  // ======= INDIVIDUAL COLUMN CREATORS (Manual Method) =======
 
   const createExpandColumn = (header?: string): ColumnDef<T, any> => {
     return {
       id: 'expand',
-      header: header || '', // ไม่มี header text หรือใช้ไอคอนเล็กๆ
-      size: 50, // กำหนดขนาดแคบ
+      header: header || '',
+      size: 50,
       enableSorting: false,
-      enableHiding: false, // ไม่ให้ซ่อน expand column ได้
+      enableHiding: false,
       enableResizing: false,
       cell: ({ row }) => {
         return h('div', { class: 'flex justify-center' }, [
@@ -100,11 +190,9 @@ export function useColumnBuilder<T>() {
       header: options?.sortable ? 
         createSortableHeader(accessorKey as string, header, options.onSort) : 
         header,
-      // เพิ่ม meta เพื่อเก็บชื่อที่แสดงผล
-      meta: {
-        displayName: header
-      },
-      enableHiding: options?.enableHiding ?? true, // default ให้ซ่อนได้
+      
+      meta: { displayName: header },
+      enableHiding: options?.enableHiding ?? true,
       cell: ({ getValue }) => {
         const value = getValue() as string | null | undefined
         const displayValue = value || '-'
@@ -134,11 +222,9 @@ export function useColumnBuilder<T>() {
       header: options?.sortable ? 
         createSortableHeader(accessorKey as string, header, options.onSort) : 
         header,
-      // เพิ่ม meta เพื่อเก็บชื่อที่แสดงผล
-      meta: {
-        displayName: header
-      },
-      enableHiding: options?.enableHiding ?? true, // default ให้ซ่อนได้
+      
+      meta: { displayName: header },
+      enableHiding: options?.enableHiding ?? true,
       cell: ({ getValue }) => {
         const value = getValue() as string | null | undefined
         const displayValue = value ? 
@@ -166,11 +252,9 @@ export function useColumnBuilder<T>() {
       header: options?.sortable ? 
         createSortableHeader(accessorKey as string, header, options.onSort) : 
         header,
-      // เพิ่ม meta เพื่อเก็บชื่อที่แสดงผล
-      meta: {
-        displayName: header
-      },
-      enableHiding: options?.enableHiding ?? true, // default ให้ซ่อนได้
+      
+      meta: { displayName: header },
+      enableHiding: options?.enableHiding ?? true,
       cell: ({ getValue }) => {
         const value = getValue() as number | null | undefined
         
@@ -207,11 +291,9 @@ export function useColumnBuilder<T>() {
       header: options?.sortable ? 
         createSortableHeader(accessorKey as string, header, options.onSort) : 
         header,
-      // เพิ่ม meta เพื่อเก็บชื่อที่แสดงผล
-      meta: {
-        displayName: header
-      },
-      enableHiding: options?.enableHiding ?? true, // default ให้ซ่อนได้
+      
+      meta: { displayName: header },
+      enableHiding: options?.enableHiding ?? true,
       cell: ({ row }) => h(
         'div', 
         { 
@@ -232,11 +314,9 @@ export function useColumnBuilder<T>() {
       header: options.sortable ? 
         createSortableHeader(accessorKey as string, header, options.onSort) : 
         header,
-      // เพิ่ม meta เพื่อเก็บชื่อที่แสดงผล
-      meta: {
-        displayName: header
-      },
-      enableHiding: options?.enableHiding ?? true, // default ให้ซ่อนได้
+      
+      meta: { displayName: header },
+      enableHiding: options?.enableHiding ?? true,
       cell: ({ getValue }) => {
         const value = getValue() as string | null | undefined
         const statusConfig = value ? options.statusMapping[value] : null
@@ -267,23 +347,230 @@ export function useColumnBuilder<T>() {
   ): ColumnDef<R, unknown> => ({
     id: 'actions',
     header,
-    // เพิ่ม meta เพื่อความสอดคล้อง
-    meta: {
-      displayName: header || 'Actions'
-    },
+    meta: { displayName: header || 'Actions' },
     enableSorting: false,
-    enableHiding: options?.enableHiding ?? false, // default ไม่ให้ซ่อน actions ได้
+    enableHiding: options?.enableHiding ?? false,
     cell: ({ row }) => cellRenderer(row.original as R)
   })
 
+  // ======= CONFIGURATION-BASED METHODS =======
+
+  /**
+   * สร้าง columns จาก configuration array
+   * @param configs - Array ของ column configurations
+   * @param callbacks - Callback functions สำหรับ actions
+   */
+  const createColumns = (
+    configs: ColumnConfig[],
+    callbacks: ColumnCallbacks<T> = {}
+  ): ComputedRef<TableColumn<T>[]> => {
+    
+    return computed(() => {
+      return configs.map(config => {
+        switch (config.type) {
+          case 'expand':
+            return createExpandColumn(config.header)
+
+          case 'id':
+            return createIdColumn(
+              config.key as keyof T, 
+              config.header, 
+              {
+                sortable: config.sortable,
+                onSort: callbacks.onSort,
+                enableHiding: config.enableHiding,
+                className: config.className
+              }
+            )
+
+          case 'text':
+            return createTextColumn(
+              config.key as keyof T,
+              config.header,
+              {
+                sortable: config.sortable,
+                maxLength: config.maxLength,
+                onSort: callbacks.onSort,
+                enableHiding: config.enableHiding,
+                className: config.className
+              }
+            )
+
+          case 'date':
+            return createDateColumn(
+              config.key as keyof T,
+              config.header,
+              {
+                sortable: config.sortable,
+                includeTime: config.includeTime,
+                onSort: callbacks.onSort,
+                enableHiding: config.enableHiding,
+                className: config.className
+              }
+            )
+
+          case 'number':
+            return createNumberColumn(
+              config.key as keyof T,
+              config.header,
+              {
+                sortable: config.sortable,
+                currency: config.currency,
+                precision: config.precision,
+                onSort: callbacks.onSort,
+                enableHiding: config.enableHiding,
+                className: config.className
+              }
+            )
+
+          case 'status':
+            return createStatusColumn(
+              config.key as keyof T,
+              config.header,
+              {
+                sortable: config.sortable,
+                statusMapping: config.statusMapping,
+                onSort: callbacks.onSort,
+                enableHiding: config.enableHiding,
+                className: config.className
+              }
+            )
+
+          case 'action':
+            return createActionColumn(
+              (item: T) => 
+                h(DataTableDropdown, {
+                  item,
+                  idKey: config.idKey || 'id',
+                  nameKey: config.nameKey || 'name',
+                  enableCopy: config.enableCopy ?? true,
+                  enableView: config.enableView ?? true,
+                  enableEdit: config.enableEdit ?? true,
+                  enableDelete: config.enableDelete ?? false,
+                  enableDownload: config.enableDownload ?? false,
+                  actions: config.customActions || [],
+                  
+                  onView: (item: any) => callbacks.onView?.(item as T),
+                  onEdit: (item: any) => callbacks.onEdit?.(item as T),
+                  onDelete: (item: any) => callbacks.onDelete?.(item as T),
+                  onAction: (actionKey: string, item: any) => 
+                    callbacks.onCustomAction?.(actionKey, item as T)
+                }),
+              config.header || '',
+              { enableHiding: config.enableHiding ?? false }
+            )
+
+          default:
+            throw new Error(`Unsupported column type: ${(config as any).type}`)
+        }
+      })
+    })
+  }
+
+  // ======= QUICK HELPERS =======
+
+  /**
+   * สร้าง CRUD columns แบบเร็ว
+   * @param config - การตั้งค่าพื้นฐาน
+   */
+  const createCrudColumns = (config: {
+    fields: Array<{
+      key: string
+      header: string
+      type?: 'text' | 'date' | 'number' | 'status'
+      options?: Record<string, any>
+    }>
+    enableExpand?: boolean
+    enableId?: boolean
+    enableActions?: boolean
+    actionOptions?: {
+      enableCopy?: boolean
+      enableView?: boolean
+      enableEdit?: boolean
+      enableDelete?: boolean
+      customActions?: Array<{
+        key: string
+        label: string
+        separator?: boolean
+      }>
+    }
+  }) => {
+    
+    const columnConfigs: ColumnConfig[] = []
+
+    // Expand column
+    if (config.enableExpand) {
+      columnConfigs.push({ type: 'expand' })
+    }
+
+    // ID column
+    if (config.enableId) {
+      columnConfigs.push({
+        type: 'id',
+        key: 'id',
+        header: 'ID',
+        sortable: true,
+        enableHiding: true
+      })
+    }
+
+    // Field columns
+    const fieldColumns: ColumnConfig[] = config.fields.map(field => ({
+      type: (field.type || 'text') as any,
+      key: field.key,
+      header: field.header,
+      sortable: true,
+      enableHiding: true,
+      ...field.options
+    }))
+    columnConfigs.push(...fieldColumns)
+
+    // Action column
+    if (config.enableActions) {
+      columnConfigs.push({
+        type: 'action',
+        enableHiding: false,
+        ...config.actionOptions
+      })
+    }
+
+    return columnConfigs
+  }
+
+  // ======= RETURN VALUES =======
+  
   return {
+    // ===== Manual Methods (เหมือนเดิม) =====
     createSortableHeader,
-    createExpandColumn, 
+    createExpandColumn,
     createTextColumn,
     createDateColumn,
     createNumberColumn,
     createIdColumn,
     createStatusColumn,
-    createActionColumn
+    createActionColumn,
+    
+    // ===== Configuration Methods (ใหม่) =====
+    createColumns,
+    createCrudColumns
   }
+}
+
+// ======= EXPORT TYPES =======
+export type {
+  ColumnConfig,
+  ColumnCallbacks,
+  TextColumnConfig,
+  DateColumnConfig,
+  NumberColumnConfig,
+  IdColumnConfig,
+  StatusColumnConfig,
+  ExpandColumnConfig,
+  ActionColumnConfig,
+  BaseColumnOptions,
+  TextColumnOptions,
+  DateColumnOptions,
+  NumberColumnOptions,
+  StatusColumnOptions,
+  IdColumnOptions
 }
