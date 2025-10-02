@@ -7,17 +7,13 @@ import { Button } from '@/components/ui/button'
 import DataTable from '@/components/custom/data-table/DataTable.vue'
 import DataTablePagination from '@/components/custom/data-table/DataTablePagination.vue'
 import DataTableSearch from '@/components/custom/data-table/DataTableSearch.vue'
-import DataTableDropdown from '@/components/custom/data-table/DataTableDropdown.vue'
-// เพิ่ม import DataTableViewOption ที่มีอยู่แล้ว
 import DataTableViewOption from '@/components/custom/data-table/DataTableViewOption.vue'
-import type { Citizen } from '@/types/citizen'
+import type { Citizen } from './types'
 import type { LengthAwarePaginator } from '@/types/pagination'
-// ใช้ composables ที่จำเป็น
-import { useColumnBuilder } from '@/composables/useColumnBuilder'
+import { useCitizens } from './useCitizens'
+import { useCitizenColumns } from './columns'
 import { useServerOperations } from '@/composables/useServerOperations'
-import { computed, ref, h } from 'vue'
-import { router } from '@inertiajs/vue3'
-import { toast } from 'vue-sonner'
+import { computed, ref } from 'vue'
 
 // Props definition
 const props = defineProps<{
@@ -40,14 +36,14 @@ const search = ref(props.query?.search ?? '')
 // เพิ่ม ref สำหรับ DataTable component
 const dataTableRef = ref()
 
-// ใช้ column builder composable
-const { 
-  createExpandColumn,
-  createIdColumn,
-  createTextColumn, 
-  createDateColumn,
-  createActionColumn 
-} = useColumnBuilder<Citizen>()
+// ใช้ Citizens composable
+const {
+  viewCitizen,
+  editCitizen,
+  deleteCitizen,
+  handleCustomAction,
+  createExpandedContent
+} = useCitizens()
 
 // Server operations
 const serverOps = useServerOperations({
@@ -63,85 +59,14 @@ const serverOps = useServerOperations({
   }))
 })
 
-// === Citizen Actions (inline functions) ===
-
-/**
- * ฟังก์ชันดูข้อมูลประชาชน
- */
-function handleViewCitizen(citizen: Citizen) {
-  console.log('View citizen:', citizen)
-  router.get(route('citizens.show', citizen.id))
-}
-
-/**
- * ฟังก์ชันแก้ไขข้อมูลประชาชน
- */
-function handleEditCitizen(citizen: Citizen) {
-  console.log('Edit citizen:', citizen)
-  router.get(route('citizens.edit', citizen.id))
-}
-
-/**
- * ฟังก์ชันลบข้อมูลประชาชน
- */
-function handleDeleteCitizen(citizen: Citizen) {
-  console.log('Delete citizen:', citizen)
-  
-  if (confirm(`คุณต้องการลบข้อมูลประชาชน ${citizen.citizen_id} หรือไม่?`)) {
-    router.delete(route('citizens.destroy', citizen.id), {
-      onSuccess: () => {
-        toast.success('ลบข้อมูลเรียบร้อยแล้ว')
-      },
-      onError: () => {
-        toast.error('เกิดข้อผิดพลาดในการลบข้อมูล')
-      }
-    })
-  }
-}
-
-/**
- * ฟังก์ชันจัดการ custom actions
- */
-function handleCustomAction(actionKey: string, citizen: Citizen) {
-  console.log('Custom action:', actionKey, citizen)
-  
-  switch (actionKey) {
-    case 'print':
-      // Logic สำหรับพิมพ์
-      toast.info(`พิมพ์ข้อมูล ${citizen.citizen_id}`)
-      break
-    case 'export':
-      // Logic สำหรับส่งออก
-      toast.info(`ส่งออกข้อมูล ${citizen.citizen_id}`)
-      break
-    case 'generateCard':
-      // Logic เฉพาะการสร้างบัตรประชาชน
-      toast.info(`สร้างบัตรสำหรับ ${citizen.citizen_id}`)
-      // router.post(route('citizen-cards.generate', citizen.id))
-      break
-    case 'viewHistory':
-      // Logic เฉพาะการดูประวัติ
-      toast.info(`ดูประวัติของ ${citizen.citizen_id}`)
-      // router.get(route('citizens.history', citizen.id))
-      break
-    default:
-      console.warn('Unknown action:', actionKey)
-  }
-}
-
-/**
- * ฟังก์ชันสร้างเนื้อหาสำหรับ expanded row
- */
-function createExpandedContent(citizen: Citizen): string {
-  return `รหัสประชาชน: ${citizen.citizen_id}
-วันเกิด: ${citizen.birth_date}
-หมายเหตุ: ${citizen.remark || 'ไม่มี'}
-สร้างเมื่อ: ${citizen.created_at}
-อัปเดตเมื่อ: ${citizen.updated_at || 'ไม่มี'}
-รหัสระบบ: ${citizen.id}`
-}
-
-// === Search Handler ===
+// Columns definition
+const columns = useCitizenColumns(
+  serverOps.onSort,
+  viewCitizen,
+  editCitizen,
+  deleteCitizen,
+  handleCustomAction
+)
 
 /**
  * ฟังก์ชัน handle search
@@ -157,91 +82,6 @@ function handleSearch(searchValue: string) {
     page: 1 // reset เป็นหน้า 1 เมื่อ search
   })
 }
-
-// === Columns Definition ===
-
-const columns = computed(() => [
-  // Column ที่ 1: Expand Button - ไม่ให้ซ่อนได้
-  createExpandColumn(),
-  
-  // Column ที่ 2: ID Column - ให้ซ่อนได้
-  createIdColumn('id', 'ID', { 
-    sortable: true, 
-    onSort: serverOps.onSort,
-    enableHiding: true
-  }),
-  
-  // Column ที่ 3: Citizen ID - ไม่ให้ซ่อนได้ เพราะเป็น column หลัก
-  createTextColumn('citizen_id', 'เลขประจำตัวประชาชน', {
-    sortable: true,
-    className: 'font-mono break-all',
-    onSort: serverOps.onSort,
-    enableHiding: false // column หลัก ไม่ให้ซ่อน
-  }),
-  
-  // Column ที่ 4: Birth date - ให้ซ่อนได้
-  createDateColumn('birth_date', 'วันเกิด', {
-    sortable: true,
-    includeTime: false,
-    onSort: serverOps.onSort,
-    enableHiding: true
-  }),
-  
-  // Column ที่ 5: Remark - ให้ซ่อนได้
-  createTextColumn('remark', 'หมายเหตุ', {
-    sortable: true,
-    maxLength: 50,
-    onSort: serverOps.onSort,
-    enableHiding: true
-  }),
-  
-  // Column ที่ 6: Created at - ให้ซ่อนได้
-  createDateColumn('created_at', 'สร้างเมื่อ', {
-    sortable: true,
-    includeTime: true,
-    className: 'text-gray-600',
-    onSort: serverOps.onSort,
-    enableHiding: true
-  }),
-
-  // Column สุดท้าย: Actions - ไม่ให้ซ่อนได้
-  createActionColumn((citizen: Citizen) => 
-    h(DataTableDropdown, {
-      item: citizen,
-      idKey: 'id',
-      nameKey: 'citizen_id',
-      enableCopy: true,
-      enableView: true,
-      enableEdit: true,
-      enableDelete: true,
-      actions: [
-        {
-          key: 'generateCard',
-          label: 'สร้างบัตร',
-          separator: true
-        },
-        {
-          key: 'viewHistory',
-          label: 'ดูประวัติ'
-        },
-        {
-          key: 'print',
-          label: 'พิมพ์',
-          separator: true
-        },
-        {
-          key: 'export',
-          label: 'ส่งออก Excel'
-        }
-      ],
-      // Event handlers
-      onView: (item: any) => handleViewCitizen(item as Citizen),
-      onEdit: (item: any) => handleEditCitizen(item as Citizen),
-      onDelete: (item: any) => handleDeleteCitizen(item as Citizen),
-      onAction: (actionKey: string, item: any) => handleCustomAction(actionKey, item as Citizen)
-    }), '', { enableHiding: false } // ไม่ให้ซ่อน actions column
-  )
-])
 
 // Log สำหรับ debugging
 console.log('Citizens page: Table initialized with', props.citizens.data.length, 'records')

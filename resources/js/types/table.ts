@@ -1,3 +1,4 @@
+// resources/js/types/table.ts
 import type { 
   ColumnDef, 
   SortingState, 
@@ -25,6 +26,9 @@ export type {
   Column,
   Table
 }
+
+// เพิ่ม type alias เพื่อให้ง่ายต่อการใช้งานและ backward compatibility
+export type TableColumn<T> = ColumnDef<T>
 
 // Helper types สำหรับ reactive values
 export type MaybeRef<T> = T | Ref<T>
