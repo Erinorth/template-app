@@ -11,6 +11,7 @@ import type { LengthAwarePaginator } from '@/types/pagination'
 import { useCitizens } from './use'
 import { useCitizenColumns } from './columns'
 import { useServerOperations } from '@/composables/useServerOperations'
+import { useModal } from '@/composables/useModal'
 import { computed, ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 
@@ -45,9 +46,10 @@ const search = ref(props.query?.search ?? '')
 const dataTableRef = ref()
 
 /**
- * State สำหรับควบคุม Modal
+ * ใช้ useModal composable สำหรับควบคุม Quick Create Modal
+ * แทนการใช้ ref(false) แบบเดิม
  */
-const isQuickCreateOpen = ref(false)
+const quickCreateModal = useModal()
 
 /**
  * ใช้ Citizens composable
@@ -109,10 +111,11 @@ function handleSearch(searchValue: string) {
 /**
  * ฟังก์ชัน handle quick create
  * เปิด modal สำหรับการเพิ่มข้อมูลแบบด่วน
+ * ใช้ quickCreateModal.open() จาก useModal composable
  */
 function handleQuickCreate() {
-  console.log('Citizens Index: Opening quick create modal')
-  isQuickCreateOpen.value = true
+  console.log('Citizens Index: Opening quick create modal via useModal')
+  quickCreateModal.open()
 }
 
 /**
@@ -127,17 +130,20 @@ function handleFullCreate() {
 /**
  * ฟังก์ชัน handle create success
  * จัดการเมื่อสร้างข้อมูลสำเร็จ
+ * ใช้ quickCreateModal.close() เพื่อปิด modal
  */
 function handleCreateSuccess() {
-  console.log('Citizens Index: Citizen created successfully')
-  // ไม่ต้องทำอะไรเพิ่ม เพราะ Inertia จะ refresh ข้อมูลอัตโนมัติ
+  console.log('Citizens Index: Citizen created successfully, closing modal via useModal')
+  quickCreateModal.close()
+  // Inertia จะ refresh ข้อมูลอัตโนมัติ
 }
 
 // Log สำหรับ debugging
 console.log('Citizens Index: Page initialized', {
   totalRecords: props.citizens.data.length,
   currentPage: props.citizens.current_page,
-  totalPages: props.citizens.last_page
+  totalPages: props.citizens.last_page,
+  modalComposable: 'useModal'
 })
 </script>
 
@@ -223,9 +229,12 @@ console.log('Citizens Index: Page initialized', {
       />
     </div>
 
-    <!-- Quick Create Modal Component -->
+    <!-- 
+      Quick Create Modal Component 
+      ใช้ v-model:open กับ quickCreateModal.isOpen จาก useModal composable
+    -->
     <CitizenQuickCreateModal
-      v-model:open="isQuickCreateOpen"
+      v-model:open="quickCreateModal.isOpen.value"
       @success="handleCreateSuccess"
     />
   </AppLayout>
