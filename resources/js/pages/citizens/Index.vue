@@ -1,18 +1,23 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
 import { type BreadcrumbItem } from '@/types'
-import { Head, Link } from '@inertiajs/vue3'
+import { Head } from '@inertiajs/vue3'
 import { HeaderWithTitle } from '@/components/custom/header-with-title'
-import { Button } from '@/components/ui/button'
 import { DataTable, DataTablePagination, DataTableSearch, DataTableViewOption } from '@/components/custom/data-table'
+import { AddDataButton } from '@/components/custom/add-data-button'
+import CitizenQuickCreateModal from './Modal.vue'
 import type { Citizen } from './types'
 import type { LengthAwarePaginator } from '@/types/pagination'
-import { useCitizens } from './useCitizens'
+import { useCitizens } from './use'
 import { useCitizenColumns } from './columns'
 import { useServerOperations } from '@/composables/useServerOperations'
 import { computed, ref } from 'vue'
+import { router } from '@inertiajs/vue3'
 
-// Props definition
+/**
+ * Props definition
+ * รับข้อมูลจาก controller
+ */
 const props = defineProps<{
   title: string
   citizens: LengthAwarePaginator<Citizen>
@@ -21,19 +26,33 @@ const props = defineProps<{
   query?: Record<string, any>
 }>()
 
-// Breadcrumbs
+/**
+ * Breadcrumbs สำหรับระบุเส้นทางการนำทาง
+ */
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Dashboard', href: '/dashboard' },
   { title: 'Citizens', href: '/citizens' },
 ]
 
-// Search state
+/**
+ * Search state สำหรับการค้นหา
+ */
 const search = ref(props.query?.search ?? '')
 
-// เพิ่ม ref สำหรับ DataTable component
+/**
+ * เพิ่ม ref สำหรับ DataTable component
+ */
 const dataTableRef = ref()
 
-// ใช้ Citizens composable
+/**
+ * State สำหรับควบคุม Modal
+ */
+const isQuickCreateOpen = ref(false)
+
+/**
+ * ใช้ Citizens composable
+ * สำหรับจัดการ logic ต่างๆ เกี่ยวกับประชาชน
+ */
 const {
   viewCitizen,
   editCitizen,
@@ -42,7 +61,9 @@ const {
   createExpandedContent
 } = useCitizens()
 
-// Server operations
+/**
+ * Server operations สำหรับการจัดการข้อมูลฝั่ง server
+ */
 const serverOps = useServerOperations({
   routeName: 'citizens.index',
   currentPage: computed(() => props.citizens.current_page),
@@ -56,7 +77,9 @@ const serverOps = useServerOperations({
   }))
 })
 
-// Columns definition
+/**
+ * Columns definition สำหรับกำหนด column ของตาราง
+ */
 const columns = useCitizenColumns(
   serverOps.onSort,
   viewCitizen,
@@ -67,9 +90,12 @@ const columns = useCitizenColumns(
 
 /**
  * ฟังก์ชัน handle search
+ * ใช้สำหรับการค้นหาข้อมูล
  */
 function handleSearch(searchValue: string) {
   search.value = searchValue
+  
+  console.log('Citizens Index: Searching', { searchValue })
   
   serverOps.makeRequest({
     search: searchValue,
@@ -80,9 +106,39 @@ function handleSearch(searchValue: string) {
   })
 }
 
+/**
+ * ฟังก์ชัน handle quick create
+ * เปิด modal สำหรับการเพิ่มข้อมูลแบบด่วน
+ */
+function handleQuickCreate() {
+  console.log('Citizens Index: Opening quick create modal')
+  isQuickCreateOpen.value = true
+}
+
+/**
+ * ฟังก์ชัน handle full create
+ * นำทางไปหน้าสำหรับการเพิ่มข้อมูลแบบเต็ม
+ */
+function handleFullCreate() {
+  console.log('Citizens Index: Navigating to full create page')
+  router.visit(route('citizens.create'))
+}
+
+/**
+ * ฟังก์ชัน handle create success
+ * จัดการเมื่อสร้างข้อมูลสำเร็จ
+ */
+function handleCreateSuccess() {
+  console.log('Citizens Index: Citizen created successfully')
+  // ไม่ต้องทำอะไรเพิ่ม เพราะ Inertia จะ refresh ข้อมูลอัตโนมัติ
+}
+
 // Log สำหรับ debugging
-console.log('Citizens page: Table initialized with', props.citizens.data.length, 'records')
-console.log('Citizens page: Available columns', columns.value.map(col => col.id || 'unnamed'))
+console.log('Citizens Index: Page initialized', {
+  totalRecords: props.citizens.data.length,
+  currentPage: props.citizens.current_page,
+  totalPages: props.citizens.last_page
+})
 </script>
 
 <template>
@@ -101,9 +157,16 @@ console.log('Citizens page: Available columns', columns.value.map(col => col.id 
         with-gradient
       >
         <template #actions>
-          <Button as-child>
-            <Link :href="route('citizens.create')">เพิ่มข้อมูล</Link>
-          </Button>
+          <!-- ใช้ AddDataButton พร้อม dropdown เลือก 2 แบบ -->
+          <AddDataButton
+            button-text="เพิ่มข้อมูล"
+            quick-create-label="เพิ่มด่วน"
+            quick-create-description="Modal ในหน้าปัจจุบัน"
+            full-create-label="เพิ่มแบบเต็ม"
+            full-create-description="หน้าใหม่แบบละเอียด"
+            @quick-create="handleQuickCreate"
+            @full-create="handleFullCreate"
+          />
         </template>
       </HeaderWithTitle>
       
@@ -159,5 +222,11 @@ console.log('Citizens page: Available columns', columns.value.map(col => col.id 
         @change:pageSize="serverOps.changePageSize"
       />
     </div>
+
+    <!-- Quick Create Modal Component -->
+    <CitizenQuickCreateModal
+      v-model:open="isQuickCreateOpen"
+      @success="handleCreateSuccess"
+    />
   </AppLayout>
 </template>
