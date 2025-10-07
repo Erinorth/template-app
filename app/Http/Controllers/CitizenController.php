@@ -72,7 +72,7 @@ class CitizenController extends Controller
     {
         \Log::info('Citizen create form requested');
 
-        return Inertia::render('citizens/FormModal');
+        return Inertia::render('citizens/Form');
     }
 
     /**
