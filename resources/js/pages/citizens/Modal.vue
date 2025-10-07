@@ -236,7 +236,7 @@ console.log('CitizenQuickCreateModal: Component initialized')
           </p>
         </div>
 
-        <DialogFooter class="gap-2 sm:gap-0">
+        <DialogFooter class="gap-3 sm:gap-3">
           <Button
             type="button"
             variant="outline"
