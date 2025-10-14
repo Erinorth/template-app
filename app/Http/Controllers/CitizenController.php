@@ -72,7 +72,9 @@ class CitizenController extends Controller
     {
         \Log::info('Citizen create form requested');
 
-        return Inertia::render('citizens/Form');
+        return Inertia::render('citizens/Form', [
+            'title' => 'เพิ่มข้อมูลประชาชน'
+        ]);
     }
 
     /**
@@ -80,7 +82,33 @@ class CitizenController extends Controller
      */
     public function store(StoreCitizenRequest $request)
     {
-        //
+        try {
+            // รับข้อมูลที่ผ่าน validation แล้ว
+            $validated = $request->validated();
+
+            \Log::info('Citizen store attempt', ['data' => $validated]);
+
+            // สร้างข้อมูล Citizen ใหม่
+            $citizen = Citizen::create($validated);
+
+            \Log::info('Citizen created successfully', ['id' => $citizen->id]);
+
+            // redirect ไปหน้า index พร้อมข้อความสำเร็จ
+            return redirect()
+                ->route('citizens.index')
+                ->with('success', 'บันทึกข้อมูลประชาชนเรียบร้อยแล้ว');
+
+        } catch (\Exception $e) {
+            \Log::error('Citizen store failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง');
+        }
     }
 
     /**
@@ -88,7 +116,13 @@ class CitizenController extends Controller
      */
     public function show(Citizen $citizen)
     {
-        //
+        \Log::info('Citizen show requested', ['id' => $citizen->id]);
+
+        // ส่งข้อมูล citizen ไปแสดงในหน้ารายละเอียด
+        return Inertia::render('citizens/Show', [
+            'title' => 'รายละเอียดประชาชน',
+            'citizen' => $citizen
+        ]);
     }
 
     /**
@@ -96,7 +130,13 @@ class CitizenController extends Controller
      */
     public function edit(Citizen $citizen)
     {
-        //
+        \Log::info('Citizen edit form requested', ['id' => $citizen->id]);
+
+        // ส่งข้อมูล citizen ไปแสดงในฟอร์มแก้ไข
+        return Inertia::render('citizens/Form', [
+            'title' => 'แก้ไขข้อมูลประชาชน',
+            'citizen' => $citizen
+        ]);
     }
 
     /**
@@ -104,7 +144,37 @@ class CitizenController extends Controller
      */
     public function update(UpdateCitizenRequest $request, Citizen $citizen)
     {
-        //
+        try {
+            // รับข้อมูลที่ผ่าน validation แล้ว
+            $validated = $request->validated();
+
+            \Log::info('Citizen update attempt', [
+                'id' => $citizen->id,
+                'data' => $validated
+            ]);
+
+            // อัปเดตข้อมูล Citizen
+            $citizen->update($validated);
+
+            \Log::info('Citizen updated successfully', ['id' => $citizen->id]);
+
+            // redirect ไปหน้า index พร้อมข้อความสำเร็จ
+            return redirect()
+                ->route('citizens.index')
+                ->with('success', 'อัปเดตข้อมูลประชาชนเรียบร้อยแล้ว');
+
+        } catch (\Exception $e) {
+            \Log::error('Citizen update failed', [
+                'id' => $citizen->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'เกิดข้อผิดพลาดในการอัปเดตข้อมูล กรุณาลองใหม่อีกครั้ง');
+        }
     }
 
     /**
@@ -112,6 +182,31 @@ class CitizenController extends Controller
      */
     public function destroy(Citizen $citizen)
     {
-        //
+        try {
+            $citizenId = $citizen->id;
+
+            \Log::info('Citizen delete attempt', ['id' => $citizenId]);
+
+            // ลบข้อมูล Citizen
+            $citizen->delete();
+
+            \Log::info('Citizen deleted successfully', ['id' => $citizenId]);
+
+            // redirect ไปหน้า index พร้อมข้อความสำเร็จ
+            return redirect()
+                ->route('citizens.index')
+                ->with('success', 'ลบข้อมูลประชาชนเรียบร้อยแล้ว');
+
+        } catch (\Exception $e) {
+            \Log::error('Citizen delete failed', [
+                'id' => $citizen->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()
+                ->back()
+                ->with('error', 'เกิดข้อผิดพลาดในการลบข้อมูล กรุณาลองใหม่อีกครั้ง');
+        }
     }
 }
