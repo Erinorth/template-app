@@ -5,13 +5,12 @@ import { Head } from '@inertiajs/vue3'
 import { HeaderWithTitle } from '@/components/custom/header-with-title'
 import { DataTable, DataTablePagination, DataTableSearch, DataTableViewOption } from '@/components/custom/data-table'
 import { AddDataButton } from '@/components/custom/add-data-button'
-import CitizenQuickCreateModal from './Modal.vue'
+import CitizenModal from './Modal.vue'
 import type { Citizen } from './types'
 import type { LengthAwarePaginator } from '@/types/pagination'
 import { useCitizens } from './use'
 import { useCitizenColumns } from './columns'
 import { useServerOperations } from '@/composables/useServerOperations'
-import { useModal } from '@/composables/useModal'
 import { computed, ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 
@@ -46,10 +45,12 @@ const search = ref(props.query?.search ?? '')
 const dataTableRef = ref()
 
 /**
- * ใช้ useModal composable สำหรับควบคุม Quick Create Modal
- * แทนการใช้ ref(false) แบบเดิม
+ * State สำหรับ modal
+ * ใช้ ref โดยตรงแทนการใช้ useModal composable
  */
-const quickCreateModal = useModal()
+const modalOpen = ref(false)
+const modalMode = ref<'create' | 'edit'>('create')
+const selectedCitizen = ref<Citizen | null>(null)
 
 /**
  * ใช้ Citizens composable
@@ -57,7 +58,6 @@ const quickCreateModal = useModal()
  */
 const {
   viewCitizen,
-  editCitizen,
   deleteCitizen,
   handleCustomAction,
   createExpandedContent
@@ -80,12 +80,28 @@ const serverOps = useServerOperations({
 })
 
 /**
+ * ฟังก์ชัน handle edit citizen
+ * เปิด modal สำหรับแก้ไข
+ */
+function handleEditCitizen(citizen: Citizen) {
+  console.log('Citizens Index: Opening edit modal', {
+    citizenId: citizen.id,
+    citizenid: citizen.citizenid
+  })
+  
+  modalMode.value = 'edit'
+  selectedCitizen.value = citizen
+  modalOpen.value = true
+}
+
+/**
  * Columns definition สำหรับกำหนด column ของตาราง
+ * ส่ง handleEditCitizen แทน editCitizen จาก useCitizens
  */
 const columns = useCitizenColumns(
   serverOps.onSort,
   viewCitizen,
-  editCitizen,
+  handleEditCitizen, // ใช้ function ที่เปิด modal แทน
   deleteCitizen,
   handleCustomAction
 )
@@ -109,13 +125,14 @@ function handleSearch(searchValue: string) {
 }
 
 /**
- * ฟังก์ชัน handle quick create
- * เปิด modal สำหรับการเพิ่มข้อมูลแบบด่วน
- * ใช้ quickCreateModal.open() จาก useModal composable
+ * เปิด modal สำหรับสร้างใหม่
  */
 function handleQuickCreate() {
-  console.log('Citizens Index: Opening quick create modal via useModal')
-  quickCreateModal.open()
+  console.log('Citizens Index: Opening quick create modal')
+  
+  modalMode.value = 'create'
+  selectedCitizen.value = null
+  modalOpen.value = true
 }
 
 /**
@@ -128,13 +145,10 @@ function handleFullCreate() {
 }
 
 /**
- * ฟังก์ชัน handle create success
- * จัดการเมื่อสร้างข้อมูลสำเร็จ
- * ใช้ quickCreateModal.close() เพื่อปิด modal
+ * Handle เมื่อบันทึกสำเร็จ
  */
-function handleCreateSuccess() {
-  console.log('Citizens Index: Citizen created successfully, closing modal via useModal')
-  quickCreateModal.close()
+function handleModalSuccess() {
+  console.log('Citizens Index: Modal saved successfully')
   // Inertia จะ refresh ข้อมูลอัตโนมัติ
 }
 
@@ -143,7 +157,6 @@ console.log('Citizens Index: Page initialized', {
   totalRecords: props.citizens.data.length,
   currentPage: props.citizens.current_page,
   totalPages: props.citizens.last_page,
-  modalComposable: 'useModal'
 })
 </script>
 
@@ -230,12 +243,14 @@ console.log('Citizens Index: Page initialized', {
     </div>
 
     <!-- 
-      Quick Create Modal Component 
-      ใช้ v-model:open กับ quickCreateModal.isOpen จาก useModal composable
+      Citizen Modal Component 
+      รองรับทั้ง Create และ Edit
     -->
-    <CitizenQuickCreateModal
-      v-model:open="quickCreateModal.isOpen.value"
-      @success="handleCreateSuccess"
+    <CitizenModal
+      v-model:open="modalOpen"
+      :mode="modalMode"
+      :citizen="selectedCitizen"
+      @success="handleModalSuccess"
     />
   </AppLayout>
 </template>
