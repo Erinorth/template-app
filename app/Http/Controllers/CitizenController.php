@@ -116,12 +116,25 @@ class CitizenController extends Controller
      */
     public function show(Citizen $citizen)
     {
-        \Log::info('Citizen show requested', ['id' => $citizen->id]);
+        // Log การเข้าถึงหน้า show
+        \Log::info('Citizen show page accessed', [
+            'id' => $citizen->id,
+            'citizen_id' => $citizen->citizen_id,
+            'user_id' => auth()->id(),
+            'timestamp' => now()->toIso8601String(),
+        ]);
 
-        // ส่งข้อมูล citizen ไปแสดงในหน้ารายละเอียด
+        // ส่งข้อมูลไปยัง Vue component
         return Inertia::render('citizens/Show', [
-            'title' => 'รายละเอียดประชาชน',
-            'citizen' => $citizen
+            'title' => 'รายละเอียดข้อมูลประชากร',
+            'citizen' => [
+                'id' => $citizen->id,
+                'citizen_id' => $citizen->citizen_id,
+                'birth_date' => $citizen->birth_date,
+                'remark' => $citizen->remark,
+                'created_at' => $citizen->created_at?->toIso8601String(),
+                'updated_at' => $citizen->updated_at?->toIso8601String(),
+            ],
         ]);
     }
 
