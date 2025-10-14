@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useForm, Head } from '@inertiajs/vue3'
 import { toast } from 'vue-sonner'
 import AppLayout from '@/layouts/AppLayout.vue'
@@ -13,40 +13,104 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, Save, X, ArrowLeft } from 'lucide-vue-next'
 
 
+
+/**
+ * Interface สำหรับ Citizen model
+ */
+interface Citizen {
+  id?: number
+  citizen_id: string
+  birth_date: string | null
+  remark: string | null
+}
+
+
+
 /**
  * Define props สำหรับ component
- * รับ title จาก parent (ถ้ามี)
+ * รับ citizen สำหรับโหมด edit (ถ้าไม่มีจะเป็นโหมด create)
  */
 const props = defineProps<{
   title?: string
+  citizen?: Citizen
 }>()
+
+
+
+/**
+ * Computed: ตรวจสอบโหมดการทำงาน
+ * ถ้ามี citizen prop จะเป็นโหมด edit
+ */
+const isEditMode = computed(() => !!props.citizen?.id)
+
+
+
+/**
+ * Computed: Page title ตามโหมด
+ */
+const pageTitle = computed(() => {
+  if (props.title) return props.title
+  return isEditMode.value ? 'แก้ไขข้อมูลประชาชน' : 'เพิ่มข้อมูลประชาชน'
+})
+
+
+
+/**
+ * Computed: Page description ตามโหมด
+ */
+const pageDescription = computed(() => {
+  return isEditMode.value 
+    ? 'แก้ไขข้อมูลประชาชนในระบบ' 
+    : 'กรอกข้อมูลเพื่อเพิ่มประชาชนเข้าสู่ระบบ'
+})
+
 
 
 /**
  * Breadcrumb items สำหรับ navigation
+ * ปรับตามโหมดการทำงาน
  */
-const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'หน้าหลัก', href: route('dashboard') },
-  { title: 'ข้อมูลประชาชน', href: route('citizens.index') },
-  { title: 'เพิ่มข้อมูลใหม่', href: route('citizens.create') }
-]
+const breadcrumbs = computed<BreadcrumbItem[]>(() => {
+  const baseCrumbs = [
+    { title: 'หน้าหลัก', href: route('dashboard') },
+    { title: 'ข้อมูลประชาชน', href: route('citizens.index') }
+  ]
+  
+  if (isEditMode.value) {
+    baseCrumbs.push({ 
+      title: 'แก้ไขข้อมูล', 
+      href: route('citizens.edit', props.citizen!.id!) 
+    })
+  } else {
+    baseCrumbs.push({ 
+      title: 'เพิ่มข้อมูลใหม่', 
+      href: route('citizens.create') 
+    })
+  }
+  
+  return baseCrumbs
+})
+
 
 
 /**
  * Form data และ validation
  * ใช้ useForm จาก Inertia สำหรับจัดการ form state
+ * ถ้าเป็นโหมด edit จะใช้ข้อมูลจาก props.citizen
  */
 const form = useForm({
-  citizen_id: '',
-  birth_date: '',
-  remark: '',
+  citizen_id: props.citizen?.citizen_id || '',
+  birth_date: props.citizen?.birth_date || '',
+  remark: props.citizen?.remark || '',
 })
+
 
 
 /**
  * State สำหรับการ submit
  */
 const isSubmitting = ref(false)
+
 
 
 /**
@@ -70,6 +134,7 @@ function formatCitizenId(value: string): string {
 }
 
 
+
 /**
  * Handle citizen ID input
  * จัดการการกรอกเลขประจำตัวประชาชน
@@ -81,6 +146,7 @@ function handleCitizenIdInput(event: Event) {
   
   console.log('Citizen ID input:', { original: input.value, formatted })
 }
+
 
 
 /**
@@ -103,6 +169,7 @@ const isCitizenIdValid = computed(() => {
 })
 
 
+
 /**
  * Computed: แสดง validation message สำหรับ citizen ID
  */
@@ -121,6 +188,7 @@ const citizenIdValidationMessage = computed(() => {
   
   return ''
 })
+
 
 
 /**
@@ -152,6 +220,7 @@ const birthDateValidationMessage = computed(() => {
 })
 
 
+
 /**
  * Computed: ตรวจสอบว่าฟอร์มสามารถ submit ได้หรือไม่
  */
@@ -163,9 +232,12 @@ const canSubmit = computed(() => {
 })
 
 
+
 /**
  * Submit form
  * ส่งข้อมูลไปยัง server
+ * ถ้าเป็นโหมด edit จะใช้ put method และส่งไปที่ route citizens.update
+ * ถ้าเป็นโหมด create จะใช้ post method และส่งไปที่ route citizens.store
  */
 function submit() {
   // ตรวจสอบความถูกต้องก่อน submit
@@ -174,37 +246,63 @@ function submit() {
     return
   }
   
-  console.log('CitizenCreate: Submitting form', form.data())
+  const mode = isEditMode.value ? 'edit' : 'create'
+  console.log(`CitizenForm: Submitting form (${mode} mode)`, form.data())
   
   isSubmitting.value = true
   
-  // ส่งข้อมูลผ่าน Inertia
-  form.post(route('citizens.store'), {
-    preserveScroll: true,
-    onSuccess: () => {
-      console.log('CitizenCreate: Form submitted successfully')
-      toast.success('เพิ่มข้อมูลประชาชนเรียบร้อยแล้ว')
-    },
-    onError: (errors) => {
-      console.error('CitizenCreate: Validation errors', errors)
-      toast.error('กรุณาตรวจสอบข้อมูลที่กรอกอีกครั้ง')
-    },
-    onFinish: () => {
-      isSubmitting.value = false
-    }
-  })
+  // เลือก route และ method ตามโหมด
+  if (isEditMode.value) {
+    // โหมด edit ใช้ put method
+    form.put(route('citizens.update', props.citizen!.id!), {
+      preserveScroll: true,
+      onSuccess: () => {
+        console.log('CitizenForm: Form updated successfully')
+        toast.success('แก้ไขข้อมูลประชาชนเรียบร้อยแล้ว')
+      },
+      onError: (errors) => {
+        console.error('CitizenForm: Validation errors', errors)
+        toast.error('กรุณาตรวจสอบข้อมูลที่กรอกอีกครั้ง')
+      },
+      onFinish: () => {
+        isSubmitting.value = false
+      }
+    })
+  } else {
+    // โหมด create ใช้ post method
+    form.post(route('citizens.store'), {
+      preserveScroll: true,
+      onSuccess: () => {
+        console.log('CitizenForm: Form created successfully')
+        toast.success('เพิ่มข้อมูลประชาชนเรียบร้อยแล้ว')
+      },
+      onError: (errors) => {
+        console.error('CitizenForm: Validation errors', errors)
+        toast.error('กรุณาตรวจสอบข้อมูลที่กรอกอีกครั้ง')
+      },
+      onFinish: () => {
+        isSubmitting.value = false
+      }
+    })
+  }
 }
+
 
 
 /**
  * Cancel และกลับไปหน้า index
  */
 function cancel() {
-  console.log('CitizenCreate: Canceling form')
+  const mode = isEditMode.value ? 'edit' : 'create'
+  console.log(`CitizenForm: Canceling form (${mode} mode)`)
   
   // ถ้ามีการกรอกข้อมูล ให้แสดง confirmation
   if (form.isDirty) {
-    if (confirm('คุณต้องการยกเลิกการเพิ่มข้อมูลหรือไม่? ข้อมูลที่กรอกจะไม่ถูกบันทึก')) {
+    const message = isEditMode.value 
+      ? 'คุณต้องการยกเลิกการแก้ไขข้อมูลหรือไม่? การเปลี่ยนแปลงจะไม่ถูกบันทึก'
+      : 'คุณต้องการยกเลิกการเพิ่มข้อมูลหรือไม่? ข้อมูลที่กรอกจะไม่ถูกบันทึก'
+    
+    if (confirm(message)) {
       form.reset()
       window.history.back()
     }
@@ -214,14 +312,38 @@ function cancel() {
 }
 
 
-// Log เมื่อ component ถูก mount
-console.log('CitizenCreate: Component initialized')
+
+/**
+ * Reset form
+ * สำหรับ create จะล้างข้อมูลทั้งหมด
+ * สำหรับ edit จะคืนค่ากลับไปเป็นค่าเริ่มต้นจาก props.citizen
+ */
+function resetForm() {
+  console.log(`CitizenForm: Resetting form (${isEditMode.value ? 'edit' : 'create'} mode)`)
+  form.reset()
+  toast.success('รีเซ็ตข้อมูลฟอร์มเรียบร้อยแล้ว')
+}
+
+
+
+/**
+ * Component mounted lifecycle
+ * Log เมื่อ component ถูก mount และแสดงโหมดที่ใช้งาน
+ */
+onMounted(() => {
+  console.log('CitizenForm: Component initialized', {
+    mode: isEditMode.value ? 'edit' : 'create',
+    citizen: props.citizen || null
+  })
+})
 </script>
+
 
 
 <template>
   <!-- Head สำหรับ page title -->
-  <Head :title="props.title ?? 'เพิ่มข้อมูลประชาชน'" />
+  <Head :title="pageTitle" />
+
 
   <!-- AppLayout แบบส่ง breadcrumbs เป็น prop -->
   <AppLayout :breadcrumbs="breadcrumbs">
@@ -230,21 +352,23 @@ console.log('CitizenCreate: Component initialized')
       <!-- Page Header -->
       <div class="mb-6">
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
-          เพิ่มข้อมูลประชาชน
+          {{ pageTitle }}
         </h1>
         <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          กรอกข้อมูลเพื่อเพิ่มประชาชนเข้าสู่ระบบ
+          {{ pageDescription }}
         </p>
       </div>
+
 
       <!-- Form Card -->
       <Card>
         <CardHeader>
           <CardTitle>ข้อมูลประชาชน</CardTitle>
           <CardDescription>
-            กรอกข้อมูลพื้นฐานของประชาชน ฟิลด์ที่มีเครื่องหมาย * เป็นฟิลด์ที่จำเป็น
+            {{ isEditMode ? 'แก้ไข' : 'กรอก' }}ข้อมูลพื้นฐานของประชาชน ฟิลด์ที่มีเครื่องหมาย * เป็นฟิลด์ที่จำเป็น
           </CardDescription>
         </CardHeader>
+
 
         <CardContent>
           <form @submit.prevent="submit" class="space-y-6">
@@ -299,6 +423,7 @@ console.log('CitizenCreate: Component initialized')
               </p>
             </div>
 
+
             <!-- Birth Date Field -->
             <div class="space-y-2">
               <Label for="birth_date">
@@ -339,6 +464,7 @@ console.log('CitizenCreate: Component initialized')
               </p>
             </div>
 
+
             <!-- Remark Field -->
             <div class="space-y-2">
               <Label for="remark">
@@ -369,6 +495,7 @@ console.log('CitizenCreate: Component initialized')
               </p>
             </div>
 
+
             <!-- Alert สำหรับ Form Errors -->
             <Alert v-if="Object.keys(form.errors).length > 0" variant="destructive">
               <AlertCircle class="h-4 w-4" />
@@ -376,6 +503,7 @@ console.log('CitizenCreate: Component initialized')
                 กรุณาตรวจสอบข้อมูลที่กรอกให้ถูกต้อง
               </AlertDescription>
             </Alert>
+
 
             <!-- Form Actions -->
             <div class="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t">
@@ -393,7 +521,7 @@ console.log('CitizenCreate: Component initialized')
               <Button
                 type="button"
                 variant="ghost"
-                @click="form.reset()"
+                @click="resetForm"
                 :disabled="isSubmitting || !form.isDirty"
                 class="w-full sm:w-auto"
               >
@@ -408,12 +536,13 @@ console.log('CitizenCreate: Component initialized')
               >
                 <Save class="h-4 w-4 mr-2" />
                 <span v-if="isSubmitting">กำลังบันทึก...</span>
-                <span v-else>บันทึกข้อมูล</span>
+                <span v-else>{{ isEditMode ? 'บันทึกการแก้ไข' : 'บันทึกข้อมูล' }}</span>
               </Button>
             </div>
           </form>
         </CardContent>
       </Card>
+
 
       <!-- Help Card -->
       <Card class="mt-6 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
@@ -428,6 +557,7 @@ console.log('CitizenCreate: Component initialized')
             <li>วันเกิดต้องเป็นวันที่ในอดีตและหลังปี ค.ศ. 1900</li>
             <li>หมายเหตุสามารถกรอกได้สูงสุด 1,000 ตัวอักษร</li>
             <li>ระบบจะจัดรูปแบบเลขประจำตัวประชาชนให้อัตโนมัติขณะพิมพ์</li>
+            <li v-if="isEditMode" class="font-semibold">คุณกำลังแก้ไขข้อมูลประชาชน หากต้องการยกเลิกกด "ยกเลิก" หรือกดปุ่ม "ล้างข้อมูล" เพื่อรีเซ็ตค่าเดิม</li>
           </ul>
         </CardContent>
       </Card>
