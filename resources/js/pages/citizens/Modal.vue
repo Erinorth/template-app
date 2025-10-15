@@ -11,36 +11,45 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { AlertCircle } from 'lucide-vue-next'
+
+// ✅ นำเข้า Form Field Components
+import { CitizenIdField, BirthDateField, RemarkField } from '@/components/custom/form-fields'
 import type { Citizen } from './types'
 
-// Props definition
+/**
+ * Props definition
+ */
 const props = defineProps<{
   open: boolean
   mode?: 'create' | 'edit'
   citizen?: Citizen | null
 }>()
 
-// Emits definition
+/**
+ * Emits definition
+ */
 const emit = defineEmits<{
   'update:open': [value: boolean]
   success: []
 }>()
 
-// State สำหรับการ submit
+/**
+ * State สำหรับการ submit
+ */
 const isSubmitting = ref(false)
 
-// ✅ ใช้ snake_case ให้ตรงกับ database
+/**
+ * Form state
+ */
 const form = useForm({
   citizen_id: '',
   birth_date: '',
   remark: '',
 })
 
-// ฟังก์ชัน format citizen ID สำหรับแสดงผล (มีขีด)
+/**
+ * ฟังก์ชัน format citizen ID สำหรับแสดงผล
+ */
 function formatCitizenId(value: string): string {
   if (!value) return ''
   
@@ -58,54 +67,16 @@ function formatCitizenId(value: string): string {
   return `${limited.substring(0, 1)}-${limited.substring(1, 5)}-${limited.substring(5, 10)}-${limited.substring(10, 12)}-${limited.substring(12)}`
 }
 
-// ✅ ฟังก์ชันลบขีดและอักขระพิเศษ เหลือเฉพาะตัวเลข
+/**
+ * ฟังก์ชันลบขีดและอักขระพิเศษ
+ */
 function cleanCitizenId(value: string): string {
   return String(value).replace(/\D/g, '')
 }
 
-// ตรวจสอบ citizen ID ด้วย checksum
-const isCitizenIdValid = computed(() => {
-  const cleaned = cleanCitizenId(form.citizen_id)
-  if (cleaned.length !== 13) return false
-
-  let sum = 0
-  for (let i = 0; i < 12; i++) {
-    sum += parseInt(cleaned[i]) * (13 - i)
-  }
-  const checkDigit = (11 - (sum % 11)) % 10
-  return checkDigit === parseInt(cleaned[12])
-})
-
-// Computed ข้อความแจ้งเตือน
-const citizenIdValidationMessage = computed(() => {
-  if (!form.citizen_id) return ''
-  const cleaned = cleanCitizenId(form.citizen_id)
-  if (cleaned.length === 0 || cleaned.length === 13) return ''
-  if (cleaned.length < 13) return `กรุณากรอกให้ครบ 13 หลัก (ป้อนแล้ว ${cleaned.length} หลัก)`
-  if (cleaned.length === 13 && !isCitizenIdValid.value)
-    return 'เลขบัตรประชาชนไม่ถูกต้อง'
-  return ''
-})
-
-const birthDateValidationMessage = computed(() => {
-  if (!form.birth_date) return ''
-
-  const birthDate = new Date(form.birth_date)
-  const today = new Date()
-
-  if (birthDate > today) return 'วันเกิดต้องไม่เกินวันปัจจุบัน'
-
-  const year1900 = new Date('1900-01-01')
-  if (birthDate < year1900) return 'กรุณาระบุวันเกิดหลังปี ค.ศ. 1900'
-
-  const age = Math.floor(
-    (today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
-  )
-  if (age > 150) return 'อายุไม่สมเหตุสมผล (มากกว่า 150 ปี)'
-
-  return ''
-})
-
+/**
+ * Computed properties
+ */
 const modalTitle = computed(() =>
   props.mode === 'edit' ? 'แก้ไขข้อมูลประชาชน' : 'เพิ่มข้อมูลประชาชน'
 )
@@ -121,11 +92,12 @@ const submitButtonText = computed(() => {
   return props.mode === 'edit' ? 'บันทึกการแก้ไข' : 'เพิ่มข้อมูล'
 })
 
-// ✅ ฟังก์ชันโหลดข้อมูล
+/**
+ * ฟังก์ชันโหลดข้อมูล
+ */
 function loadCitizenData(citizen: Citizen) {
   console.log('📥 Loading citizen data:', citizen)
 
-  // กำหนดค่าโดยตรง - แสดง citizen_id แบบมีขีด
   form.citizen_id = citizen.citizen_id ? formatCitizenId(citizen.citizen_id) : ''
   form.birth_date = citizen.birth_date ?? ''
   form.remark = citizen.remark ?? ''
@@ -139,7 +111,9 @@ function loadCitizenData(citizen: Citizen) {
   })
 }
 
-// Watch modal state
+/**
+ * Watch modal state
+ */
 watch(
   () => ({ open: props.open, citizen: props.citizen, mode: props.mode }),
   ({ open, citizen, mode }) => {
@@ -162,17 +136,13 @@ watch(
   { immediate: true }
 )
 
-// Handle input
-function handleCitizenIdInput(event: Event) {
-  const input = event.target as HTMLInputElement
-  form.citizen_id = formatCitizenId(input.value)
-}
-
-// ✅ Submit form - ลบขีดออกก่อนส่ง
+/**
+ * Submit form
+ */
 function submitForm() {
-  // เตรียมข้อมูลสำหรับส่ง - ลบขีดออกจาก citizen_id
+  // เตรียมข้อมูลสำหรับส่ง
   const submitData = {
-    citizen_id: cleanCitizenId(form.citizen_id), // ✅ ส่งเฉพาะตัวเลข 13 หลัก
+    citizen_id: cleanCitizenId(form.citizen_id),
     birth_date: form.birth_date,
     remark: form.remark,
   }
@@ -186,7 +156,6 @@ function submitForm() {
     : route('citizens.store')
   const submitMethod = isEditMode ? 'put' : 'post'
 
-  // ✅ ใช้ form.transform() เพื่อแปลงข้อมูลก่อนส่ง
   form.transform(() => submitData)[submitMethod](submitRoute, {
     preserveScroll: true,
     onSuccess: () => {
@@ -226,103 +195,28 @@ console.log('🚀 CitizenModal initialized')
       </DialogHeader>
 
       <form @submit.prevent="submitForm" class="space-y-4">
-        <!-- Citizen ID Field -->
-        <div class="space-y-2">
-          <Label for="citizen_id">
-            เลขบัตรประชาชน <span class="text-red-500">*</span>
-          </Label>
-          <Input
-            id="citizen_id"
-            v-model="form.citizen_id"
-            type="text"
-            placeholder="X-XXXX-XXXXX-XX-X"
-            maxlength="17"
-            @input="handleCitizenIdInput"
-            :class="{ 'border-red-500': form.errors.citizen_id }"
-            required
-            :disabled="isSubmitting"
-          />
-          <p
-            v-if="form.errors.citizen_id"
-            class="text-sm text-red-500 flex items-center gap-1"
-          >
-            <AlertCircle class="h-4 w-4" />
-            {{ form.errors.citizen_id }}
-          </p>
-          <p
-            v-else-if="citizenIdValidationMessage"
-            :class="[
-              'text-sm flex items-center gap-1',
-              !isCitizenIdValid &&
-              form.citizen_id.replace(/\D/g, '').length === 13
-                ? 'text-red-500'
-                : 'text-muted-foreground',
-            ]"
-          >
-            <AlertCircle
-              v-if="
-                !isCitizenIdValid &&
-                form.citizen_id.replace(/\D/g, '').length === 13
-              "
-              class="h-4 w-4"
-            />
-            {{ citizenIdValidationMessage }}
-          </p>
-          <p v-else class="text-xs text-muted-foreground">
-            กรุณากรอกเลขบัตรประชาชน 13 หลัก
-          </p>
-        </div>
+        <!-- ✅ ใช้ CitizenIdField Component -->
+        <CitizenIdField
+          v-model="form.citizen_id"
+          :error="form.errors.citizen_id"
+          :disabled="isSubmitting"
+        />
 
-        <!-- Birth Date Field -->
-        <div class="space-y-2">
-          <Label for="birth_date">วันเกิด</Label>
-          <Input
-            id="birth_date"
-            v-model="form.birth_date"
-            type="date"
-            :max="new Date().toISOString().split('T')[0]"
-            :class="{
-              'border-red-500':
-                form.errors.birth_date ||
-                (form.birth_date && birthDateValidationMessage.includes('ไม่')),
-            }"
-            :disabled="isSubmitting"
-          />
-          <p
-            v-if="form.errors.birth_date"
-            class="text-sm text-red-500 flex items-center gap-1"
-          >
-            <AlertCircle class="h-4 w-4" />
-            {{ form.errors.birth_date }}
-          </p>
-          <p
-            v-else-if="birthDateValidationMessage"
-            :class="[
-              'text-sm',
-              birthDateValidationMessage.includes('ไม่')
-                ? 'text-red-500'
-                : 'text-muted-foreground',
-            ]"
-          >
-            {{ birthDateValidationMessage }}
-          </p>
-        </div>
+        <!-- ✅ ใช้ BirthDateField Component -->
+        <BirthDateField
+          v-model="form.birth_date"
+          :error="form.errors.birth_date"
+          :disabled="isSubmitting"
+        />
 
-        <!-- Remark Field -->
-        <div class="space-y-2">
-          <Label for="remark">หมายเหตุ</Label>
-          <Textarea
-            id="remark"
-            v-model="form.remark"
-            placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)"
-            rows="3"
-            :class="{ 'border-red-500': form.errors.remark }"
-            :disabled="isSubmitting"
-          />
-          <p v-if="form.errors.remark" class="text-sm text-red-500">
-            {{ form.errors.remark }}
-          </p>
-        </div>
+        <!-- ✅ ใช้ RemarkField Component -->
+        <RemarkField
+          v-model="form.remark"
+          :error="form.errors.remark"
+          :disabled="isSubmitting"
+          :rows="3"
+          placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)"
+        />
 
         <DialogFooter class="gap-3 sm:gap-3">
           <Button

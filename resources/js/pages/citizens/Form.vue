@@ -6,14 +6,15 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import { type BreadcrumbItem } from '@/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, Save, X, ArrowLeft } from 'lucide-vue-next'
 
-// ... (interface และ props เดิม)
+// ✅ นำเข้า Form Field Components
+import { CitizenIdField, BirthDateField, RemarkField } from '@/components/custom/form-fields'
 
+/**
+ * Interface สำหรับ Citizen
+ */
 interface Citizen {
   id?: number
   citizen_id: string
@@ -21,24 +22,39 @@ interface Citizen {
   remark: string | null
 }
 
+/**
+ * Props ที่รับมาจาก Controller
+ */
 const props = defineProps<{
   title?: string
   citizen?: Citizen
 }>()
 
+/**
+ * ตรวจสอบว่าอยู่ในโหมด edit หรือไม่
+ */
 const isEditMode = computed(() => !!props.citizen?.id)
 
+/**
+ * Title ของหน้า
+ */
 const pageTitle = computed(() => {
   if (props.title) return props.title
   return isEditMode.value ? 'แก้ไขข้อมูลประชาชน' : 'เพิ่มข้อมูลประชาชน'
 })
 
+/**
+ * คำอธิบายของหน้า
+ */
 const pageDescription = computed(() => {
   return isEditMode.value 
     ? 'แก้ไขข้อมูลประชาชนในระบบ' 
     : 'กรอกข้อมูลเพื่อเพิ่มประชาชนเข้าสู่ระบบ'
 })
 
+/**
+ * Breadcrumbs สำหรับการนำทาง
+ */
 const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   const baseCrumbs = [
     { title: 'หน้าหลัก', href: route('dashboard') },
@@ -60,12 +76,18 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   return baseCrumbs
 })
 
+/**
+ * Form state พร้อม format citizen_id เป็นรูปแบบที่มีขีด
+ */
 const form = useForm({
-  citizen_id: props.citizen?.citizen_id || '',
+  citizen_id: props.citizen?.citizen_id ? formatCitizenId(props.citizen.citizen_id) : '',
   birth_date: props.citizen?.birth_date || '',
   remark: props.citizen?.remark || '',
 })
 
+/**
+ * State สำหรับการ submit
+ */
 const isSubmitting = ref(false)
 
 /**
@@ -85,84 +107,22 @@ function formatCitizenId(value: string): string {
 }
 
 /**
- * ✅ ฟังก์ชันลบขีดและอักขระพิเศษ เหลือเฉพาะตัวเลข
- * สำหรับส่งข้อมูลไปยัง Backend
+ * ฟังก์ชันลบขีดและอักขระพิเศษ เหลือเฉพาะตัวเลข
  */
 function cleanCitizenId(value: string): string {
   return value.replace(/\D/g, '')
 }
 
-function handleCitizenIdInput(event: Event) {
-  const input = event.target as HTMLInputElement
-  const formatted = formatCitizenId(input.value)
-  form.citizen_id = formatted
-  
-  console.log('Citizen ID input:', { original: input.value, formatted })
-}
-
-const isCitizenIdValid = computed(() => {
-  const cleaned = cleanCitizenId(form.citizen_id)
-  
-  if (cleaned.length !== 13) return false
-  
-  let sum = 0
-  for (let i = 0; i < 12; i++) {
-    sum += parseInt(cleaned[i]) * (13 - i)
-  }
-  const checkDigit = (11 - (sum % 11)) % 10
-  
-  return checkDigit === parseInt(cleaned[12])
-})
-
-const citizenIdValidationMessage = computed(() => {
-  if (!form.citizen_id) return ''
-  
-  const cleaned = cleanCitizenId(form.citizen_id)
-  
-  if (cleaned.length > 0 && cleaned.length < 13) {
-    return 'กรุณากรอกเลขประจำตัวประชาชนให้ครบ 13 หลัก'
-  }
-  
-  if (cleaned.length === 13 && !isCitizenIdValid.value) {
-    return 'เลขประจำตัวประชาชนไม่ถูกต้อง'
-  }
-  
-  return ''
-})
-
-const birthDateValidationMessage = computed(() => {
-  if (!form.birth_date) return ''
-  
-  const birthDate = new Date(form.birth_date)
-  const today = new Date()
-  
-  if (birthDate >= today) {
-    return 'วันเกิดต้องเป็นวันที่ในอดีต'
-  }
-  
-  const year1900 = new Date('1900-01-01')
-  if (birthDate < year1900) {
-    return 'วันเกิดต้องหลังปี ค.ศ. 1900'
-  }
-  
-  const age = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25))
-  
-  if (age > 150) {
-    return 'วันเกิดไม่สมเหตุสมผล'
-  }
-  
-  return `อายุ ${age} ปี`
-})
-
+/**
+ * ตรวจสอบว่าสามารถ submit ได้หรือไม่
+ */
 const canSubmit = computed(() => {
-  return form.citizen_id && 
-         isCitizenIdValid.value && 
-         !isSubmitting.value &&
-         !citizenIdValidationMessage.value.includes('ไม่ถูกต้อง')
+  const cleaned = cleanCitizenId(form.citizen_id)
+  return cleaned.length === 13 && !isSubmitting.value
 })
 
 /**
- * ✅ Submit form - แก้ไขให้ลบขีดออกก่อนส่ง
+ * Submit form
  */
 function submit() {
   if (!canSubmit.value) {
@@ -172,9 +132,9 @@ function submit() {
   
   const mode = isEditMode.value ? 'edit' : 'create'
   
-  // ✅ เตรียมข้อมูลที่จะส่ง - ลบขีดออกจาก citizen_id
+  // เตรียมข้อมูลที่จะส่ง - ลบขีดออกจาก citizen_id
   const submitData = {
-    citizen_id: cleanCitizenId(form.citizen_id), // ส่งเฉพาะตัวเลข 13 หลัก
+    citizen_id: cleanCitizenId(form.citizen_id),
     birth_date: form.birth_date,
     remark: form.remark,
   }
@@ -187,7 +147,6 @@ function submit() {
   isSubmitting.value = true
   
   if (isEditMode.value) {
-    // ✅ โหมด edit - ใช้ transform เพื่อแปลงข้อมูลก่อนส่ง
     form.transform(() => submitData).put(route('citizens.update', props.citizen!.id!), {
       preserveScroll: true,
       onSuccess: () => {
@@ -203,7 +162,6 @@ function submit() {
       }
     })
   } else {
-    // ✅ โหมด create - ใช้ transform เพื่อแปลงข้อมูลก่อนส่ง
     form.transform(() => submitData).post(route('citizens.store'), {
       preserveScroll: true,
       onSuccess: () => {
@@ -221,6 +179,9 @@ function submit() {
   }
 }
 
+/**
+ * ยกเลิกการแก้ไข
+ */
 function cancel() {
   const mode = isEditMode.value ? 'edit' : 'create'
   console.log(`CitizenForm: Canceling form (${mode} mode)`)
@@ -239,12 +200,18 @@ function cancel() {
   }
 }
 
+/**
+ * รีเซ็ตฟอร์ม
+ */
 function resetForm() {
   console.log(`CitizenForm: Resetting form (${isEditMode.value ? 'edit' : 'create'} mode)`)
   form.reset()
   toast.success('รีเซ็ตข้อมูลฟอร์มเรียบร้อยแล้ว')
 }
 
+/**
+ * Component mounted
+ */
 onMounted(() => {
   console.log('CitizenForm: Component initialized', {
     mode: isEditMode.value ? 'edit' : 'create',
@@ -253,12 +220,12 @@ onMounted(() => {
 })
 </script>
 
-<!-- Template เดิม ไม่ต้องแก้ -->
 <template>
   <Head :title="pageTitle" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="container mx-auto py-6 px-4 sm:px-6 lg:px-8 max-w-4xl">
+      <!-- Header Section -->
       <div class="mb-6">
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
           {{ pageTitle }}
@@ -278,124 +245,28 @@ onMounted(() => {
 
         <CardContent>
           <form @submit.prevent="submit" class="space-y-6">
-            <!-- Citizen ID Field -->
-            <div class="space-y-2">
-              <Label for="citizen_id">
-                เลขประจำตัวประชาชน <span class="text-red-500">*</span>
-              </Label>
-              <Input
-                id="citizen_id"
-                v-model="form.citizen_id"
-                type="text"
-                placeholder="X-XXXX-XXXXX-XX-X"
-                maxlength="17"
-                autocomplete="off"
-                @input="handleCitizenIdInput"
-                :class="{ 
-                  'border-red-500': form.errors.citizen_id || (form.citizen_id && !isCitizenIdValid),
-                  'border-green-500': form.citizen_id && isCitizenIdValid
-                }"
-                :disabled="isSubmitting"
-                required
-              />
-              
-              <p 
-                v-if="form.errors.citizen_id" 
-                class="text-sm text-red-500 flex items-center gap-1"
-              >
-                <AlertCircle class="h-4 w-4" />
-                {{ form.errors.citizen_id }}
-              </p>
-              
-              <p 
-                v-else-if="citizenIdValidationMessage"
-                :class="[
-                  'text-sm flex items-center gap-1',
-                  !isCitizenIdValid && form.citizen_id.replace(/\D/g, '').length === 13
-                    ? 'text-red-500'
-                    : 'text-muted-foreground'
-                ]"
-              >
-                <AlertCircle 
-                  v-if="!isCitizenIdValid && form.citizen_id.replace(/\D/g, '').length === 13"
-                  class="h-4 w-4"
-                />
-                {{ citizenIdValidationMessage }}
-              </p>
-              
-              <p v-else class="text-xs text-muted-foreground">
-                กรอกเลขประจำตัวประชาชน 13 หลัก
-              </p>
-            </div>
+            <!-- ✅ ใช้ CitizenIdField Component -->
+            <CitizenIdField
+              v-model="form.citizen_id"
+              :error="form.errors.citizen_id"
+              :disabled="isSubmitting"
+            />
 
-            <!-- Birth Date Field -->
-            <div class="space-y-2">
-              <Label for="birth_date">
-                วันเกิด
-              </Label>
-              <Input
-                id="birth_date"
-                v-model="form.birth_date"
-                type="date"
-                :max="new Date().toISOString().split('T')[0]"
-                :class="{ 
-                  'border-red-500': form.errors.birth_date || (form.birth_date && birthDateValidationMessage.includes('ต้อง'))
-                }"
-                :disabled="isSubmitting"
-              />
-              
-              <p 
-                v-if="form.errors.birth_date" 
-                class="text-sm text-red-500 flex items-center gap-1"
-              >
-                <AlertCircle class="h-4 w-4" />
-                {{ form.errors.birth_date }}
-              </p>
-              
-              <p 
-                v-else-if="birthDateValidationMessage"
-                :class="[
-                  'text-sm',
-                  birthDateValidationMessage.includes('ต้อง') ? 'text-red-500' : 'text-muted-foreground'
-                ]"
-              >
-                {{ birthDateValidationMessage }}
-              </p>
-              
-              <p v-else class="text-xs text-muted-foreground">
-                เลือกวันเกิดของประชาชน
-              </p>
-            </div>
+            <!-- ✅ ใช้ BirthDateField Component -->
+            <BirthDateField
+              v-model="form.birth_date"
+              :error="form.errors.birth_date"
+              :disabled="isSubmitting"
+            />
 
-            <!-- Remark Field -->
-            <div class="space-y-2">
-              <Label for="remark">
-                หมายเหตุ
-              </Label>
-              <Textarea
-                id="remark"
-                v-model="form.remark"
-                placeholder="กรอกหมายเหตุเพิ่มเติม (ถ้ามี)"
-                rows="4"
-                maxlength="1000"
-                :class="{ 'border-red-500': form.errors.remark }"
-                :disabled="isSubmitting"
-              />
-              
-              <p 
-                v-if="form.errors.remark" 
-                class="text-sm text-red-500 flex items-center gap-1"
-              >
-                <AlertCircle class="h-4 w-4" />
-                {{ form.errors.remark }}
-              </p>
-              
-              <p v-else class="text-xs text-muted-foreground flex items-center justify-between">
-                <span>กรอกหมายเหตุหรือข้อมูลเพิ่มเติม</span>
-                <span>{{ form.remark?.length || 0 }}/1000</span>
-              </p>
-            </div>
+            <!-- ✅ ใช้ RemarkField Component -->
+            <RemarkField
+              v-model="form.remark"
+              :error="form.errors.remark"
+              :disabled="isSubmitting"
+            />
 
+            <!-- Error Alert -->
             <Alert v-if="Object.keys(form.errors).length > 0" variant="destructive">
               <AlertCircle class="h-4 w-4" />
               <AlertDescription>
@@ -403,6 +274,7 @@ onMounted(() => {
               </AlertDescription>
             </Alert>
 
+            <!-- Action Buttons -->
             <div class="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t">
               <Button
                 type="button"
@@ -440,6 +312,7 @@ onMounted(() => {
         </CardContent>
       </Card>
 
+      <!-- Help Card -->
       <Card class="mt-6 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
         <CardHeader>
           <CardTitle class="text-blue-900 dark:text-blue-100 text-base">
@@ -452,7 +325,9 @@ onMounted(() => {
             <li>วันเกิดต้องเป็นวันที่ในอดีตและหลังปี ค.ศ. 1900</li>
             <li>หมายเหตุสามารถกรอกได้สูงสุด 1,000 ตัวอักษร</li>
             <li>ระบบจะจัดรูปแบบเลขประจำตัวประชาชนให้อัตโนมัติขณะพิมพ์</li>
-            <li v-if="isEditMode" class="font-semibold">คุณกำลังแก้ไขข้อมูลประชาชน หากต้องการยกเลิกกด "ยกเลิก" หรือกดปุ่ม "ล้างข้อมูล" เพื่อรีเซ็ตค่าเดิม</li>
+            <li v-if="isEditMode" class="font-semibold">
+              คุณกำลังแก้ไขข้อมูลประชาชน หากต้องการยกเลิกกด "ยกเลิก" หรือกดปุ่ม "ล้างข้อมูล" เพื่อรีเซ็ตค่าเดิม
+            </li>
           </ul>
         </CardContent>
       </Card>
