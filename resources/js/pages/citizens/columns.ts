@@ -1,24 +1,19 @@
-/**
- * ไฟล์: resources/js/pages/citizens/columns.ts
- * คำอธิบาย: สร้าง columns configuration สำหรับตาราง citizens
- */
+// ไฟล์: resources/js/pages/citizens/columns.ts
+// คำอธิบาย: สร้าง column configuration สำหรับตาราง Citizens โดยใช้ useColumnBuilder
 
 import { useColumnBuilder, type ColumnConfig, type ColumnCallbacks } from '@/composables/useColumnBuilder'
 import type { Citizen } from './types'
-import { 
-  CITIZEN_CUSTOM_ACTIONS, 
-  CITIZEN_COLUMN_CLASSES,
-  CITIZEN_DISPLAY_FIELDS,
-} from './constants'
+import { CITIZEN_COLUMN_CLASSES, CITIZEN_DISPLAY_FIELDS } from './constants'
+import { useCitizens } from './use'
 
 /**
- * Hook สำหรับสร้าง columns configuration สำหรับตาราง citizens
- * @param onSort - callback เมื่อมีการเรียงลำดับ
- * @param onView - callback เมื่อกดดูข้อมูล
- * @param onEdit - callback เมื่อกดแก้ไข
- * @param onDelete - callback เมื่อกดลบ
- * @param onCustomAction - callback เมื่อกด custom action
- * @returns columns configuration
+ * ฟังก์ชันสำหรับสร้าง columns configuration สำหรับตาราง Citizens
+ * @param onSort - callback สำหรับการเรียงลำดับ
+ * @param onView - callback สำหรับการดูรายละเอียด
+ * @param onEdit - callback สำหรับการแก้ไข
+ * @param onDelete - callback สำหรับการลบ
+ * @param onCustomAction - callback สำหรับ custom actions
+ * @returns computed columns สำหรับ DataTable
  */
 export function useCitizenColumns(
   onSort: (field: string) => void,
@@ -27,17 +22,42 @@ export function useCitizenColumns(
   onDelete: (citizen: Citizen) => void,
   onCustomAction: (actionKey: string, citizen: Citizen) => void
 ) {
-  // สร้าง column builder
+  // ดึง custom actions จาก useCitizens composable
+  const { customActions } = useCitizens()
+  
+  // สร้าง column builder instance
   const { createColumns } = useColumnBuilder<Citizen>()
 
-  // กำหนดค่า column configurations
-  const columnConfigs: ColumnConfig[] = [
-    // Expand column สำหรับแสดงรายละเอียดเพิ่มเติม
-    { 
-      type: 'expand' 
-    },
+  // แปลง customActions ให้ตรงกับ type ของ DataTableDropdown
+  // โดยกรอง variant ที่ไม่รองรับออก (outline, secondary, link)
+  const filteredCustomActions = customActions.map((action) => {
+    // กรอง variant ให้เหลือเฉพาะ 'default' | 'destructive' | 'ghost'
+    let variant: 'default' | 'destructive' | 'ghost' = 'default'
     
-    // ID column
+    if (action.variant === 'destructive') {
+      variant = 'destructive'
+    } else if (action.variant === 'ghost') {
+      variant = 'ghost'
+    }
+    
+    return {
+      key: action.key,
+      label: action.label,
+      icon: action.icon,
+      variant: variant, // ใช้ variant ที่กรองแล้ว
+      className: action.className,
+      disabled: action.disabled,
+      visible: action.visible,
+      separator: action.separator
+    }
+  })
+
+  // กำหนด column configurations
+  const columnConfigs: ColumnConfig[] = [
+    // Expand Column - สำหรับแสดงข้อมูลเพิ่มเติม
+    { type: 'expand' },
+    
+    // ID Column - แสดง ID หลัก
     {
       type: 'id',
       key: 'id' as string,
@@ -47,17 +67,17 @@ export function useCitizenColumns(
       className: CITIZEN_COLUMN_CLASSES.ID
     },
     
-    // เลขบัตรประชาชน
+    // Citizen ID Column - เลขบัตรประชาชน (คอลัมน์หลัก)
     {
       type: 'text',
       key: CITIZEN_DISPLAY_FIELDS.ID_FIELD as string,
-      header: 'เลขประจำตัวประชาชน',
+      header: 'เลขบัตรประชาชน',
       sortable: true,
-      enableHiding: false, // ห้ามซ่อน column นี้
+      enableHiding: false,
       className: CITIZEN_COLUMN_CLASSES.CITIZEN_ID
     },
     
-    // วันเกิด
+    // Birth Date Column - วันเกิด
     {
       type: 'date',
       key: CITIZEN_DISPLAY_FIELDS.DATE_FIELD as string,
@@ -68,7 +88,7 @@ export function useCitizenColumns(
       className: CITIZEN_COLUMN_CLASSES.DATE
     },
     
-    // หมายเหตุ - ลบ placeholder ออก
+    // Remark Column - หมายเหตุ
     {
       type: 'text',
       key: CITIZEN_DISPLAY_FIELDS.REMARK_FIELD as string,
@@ -79,7 +99,7 @@ export function useCitizenColumns(
       className: CITIZEN_COLUMN_CLASSES.REMARK
     },
     
-    // วันที่สร้าง
+    // Created At Column - วันที่สร้าง
     {
       type: 'date',
       key: 'created_at' as string,
@@ -89,8 +109,8 @@ export function useCitizenColumns(
       enableHiding: true,
       className: CITIZEN_COLUMN_CLASSES.CREATED_AT
     },
-
-    // Action column
+    
+    // Action Column - ปุ่ม Actions dropdown
     {
       type: 'action',
       idKey: 'id' as string,
@@ -100,11 +120,11 @@ export function useCitizenColumns(
       enableEdit: true,
       enableDelete: true,
       enableHiding: false,
-      customActions: CITIZEN_CUSTOM_ACTIONS
+      customActions: filteredCustomActions // ใช้ customActions ที่กรองแล้ว
     }
   ]
 
-  // กำหนดค่า callbacks
+  // กำหนด callbacks สำหรับ column actions
   const callbacks: ColumnCallbacks<Citizen> = {
     onSort,
     onView,
@@ -113,13 +133,11 @@ export function useCitizenColumns(
     onCustomAction
   }
 
-  // Log เพื่อตรวจสอบ
-  console.log('📋 Citizen columns: Created columns configuration', {
+  console.log('[Citizen columns] Created columns configuration', {
     totalColumns: columnConfigs.length,
-    customActions: CITIZEN_CUSTOM_ACTIONS.length,
+    customActions: filteredCustomActions.length,
     searchableFields: Object.values(CITIZEN_DISPLAY_FIELDS)
   })
 
-  // สร้างและ return columns
   return createColumns(columnConfigs, callbacks)
 }

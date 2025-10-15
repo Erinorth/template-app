@@ -1,14 +1,13 @@
 // ไฟล์: resources/js/composables/useCrudOperations.ts
-// ปรับปรุง CRUD Operations ให้มีความสมบูรณ์ Type-Safe และ Flexible
+// Composable สำหรับจัดการ CRUD operations พร้อม custom actions
 
 import { router } from '@inertiajs/vue3'
 import { toast } from 'vue-sonner'
-import { ref, computed, type Ref } from 'vue'
-
-// ======= TYPE DEFINITIONS =======
+import { ref, type Ref } from 'vue'
+import type { Component } from 'vue'
 
 /**
- * Base Entity Interface - ทุก entity ต้อง extend จากนี้
+ * Interface พื้นฐานสำหรับ Entity ทั่วไป
  */
 export interface BaseEntity {
   id: number | string
@@ -18,68 +17,53 @@ export interface BaseEntity {
 }
 
 /**
- * Options สำหรับ Delete Operation
+ * Interface สำหรับ Options ของการลบข้อมูล
  */
 export interface DeleteOptions {
-  /** แสดง confirmation dialog */
+  /** แสดง confirmation dialog ก่อนลบหรือไม่ (default: true) */
   confirm?: boolean
-  
-  /** ข้อความ confirmation */
+  /** ข้อความใน confirmation dialog */
   confirmMessage?: string
-  
-  /** ข้อความ success */
+  /** ข้อความเมื่อลบสำเร็จ */
   successMessage?: string
-  
-  /** ข้อความ error */
+  /** ข้อความเมื่อเกิด error */
   errorMessage?: string
-  
-  /** Preserve scroll position */
+  /** รักษา scroll position หรือไม่ (default: true) */
   preserveScroll?: boolean
-  
-  /** Preserve state */
+  /** รักษา state หรือไม่ (default: true) */
   preserveState?: boolean
-  
-  /** Callback เมื่อลบสำเร็จ */
+  /** Callback เมื่อสำเร็จ */
   onSuccess?: () => void
-  
   /** Callback เมื่อเกิด error */
   onError?: (errors: any) => void
 }
 
 /**
- * Options สำหรับ Custom Action
+ * Interface สำหรับ options ของ Custom Action Handler
  */
 export interface CustomActionOptions<T extends BaseEntity> {
-  /** แสดง loading state */
+  /** แสดง loading indicator หรือไม่ (default: true) */
   showLoading?: boolean
-  
-  /** Loading message */
+  /** ข้อความขณะ loading */
   loadingMessage?: string
-  
-  /** Success message */
+  /** ข้อความเมื่อสำเร็จ */
   successMessage?: string
-  
-  /** Error message */
+  /** ข้อความเมื่อเกิด error */
   errorMessage?: string
-  
-  /** Confirm ก่อนทำงาน */
+  /** แสดง confirmation dialog ก่อนดำเนินการหรือไม่ (default: false) */
   confirm?: boolean
-  
-  /** Confirmation message */
+  /** ข้อความใน confirmation dialog */
   confirmMessage?: string
-  
-  /** Transform ข้อมูลก่อนส่ง */
+  /** Function สำหรับแปลงข้อมูลก่อนส่งไปยัง handler */
   transformData?: (item: T) => any
-  
   /** Callback เมื่อสำเร็จ */
   onSuccess?: (item: T, result?: any) => void
-  
   /** Callback เมื่อเกิด error */
   onError?: (item: T, error: any) => void
 }
 
 /**
- * Custom Action Handler Type
+ * Type สำหรับ Custom Action Handler Function
  */
 export type CustomActionHandler<T extends BaseEntity> = (
   item: T,
@@ -87,39 +71,54 @@ export type CustomActionHandler<T extends BaseEntity> = (
 ) => void | Promise<void>
 
 /**
- * Custom Action Definition
+ * Interface สำหรับกำหนด Custom Action
+ * รองรับทั้ง business logic และ UI properties
  */
 export interface CustomAction<T extends BaseEntity> {
-  /** Key สำหรับระบุ action */
+  /** Key สำหรับระบุ action (ต้องไม่ซ้ำกัน) */
   key: string
   
-  /** Label ที่แสดง */
+  /** ข้อความแสดงบน UI */
   label: string
   
-  /** Handler function */
+  /** Handler function สำหรับดำเนินการ */
   handler: CustomActionHandler<T>
   
-  /** Options เริ่มต้น */
+  /** Options เริ่มต้นสำหรับ action นี้ */
   defaultOptions?: CustomActionOptions<T>
+  
+  /** Icon component จาก lucide-vue-next (optional) */
+  icon?: Component
+  
+  /** รูปแบบปุ่ม (optional) */
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
+  
+  /** CSS class เพิ่มเติม (optional) */
+  className?: string
+  
+  /** แสดง separator ก่อนหน้า action นี้หรือไม่ (optional) */
+  separator?: boolean
+  
+  /** ซ่อน/แสดง action ตามเงื่อนไข (optional) */
+  visible?: boolean
+  
+  /** ปิดใช้งาน action หรือไม่ (optional) */
+  disabled?: boolean
 }
 
 /**
- * CRUD Configuration
+ * Interface สำหรับการตั้งค่า CRUD Config
  */
 export interface CrudConfig<T extends BaseEntity> {
-  /** Route prefix (เช่น 'citizens', 'users') */
+  /** Prefix ของ route name (เช่น 'citizens', 'users') */
   routePrefix: string
-  
-  /** ชื่อ entity สำหรับแสดงผล */
+  /** ชื่อ entity ที่แสดงในข้อความ */
   entityDisplayName: string
-  
-  /** Field สำหรับแสดงชื่อ entity */
+  /** Field ที่ใช้แสดงชื่อ entity หรือ function สำหรับสร้างชื่อ */
   displayField?: keyof T | ((item: T) => string)
-  
-  /** Custom actions */
+  /** Custom actions ที่สามารถทำได้กับ entity นี้ */
   customActions?: Record<string, CustomAction<T>>
-  
-  /** Default messages */
+  /** ข้อความต่างๆ ที่ใช้ในระบบ */
   messages?: {
     deleteConfirm?: string
     deleteSuccess?: string
@@ -128,98 +127,86 @@ export interface CrudConfig<T extends BaseEntity> {
     viewSuccess?: string
     editSuccess?: string
   }
-  
-  /** Delete options เริ่มต้น */
+  /** Options สำหรับการลบ */
   deleteOptions?: Partial<DeleteOptions>
-  
-  /** เปิดใช้งาน logging */
+  /** เปิดใช้งาน logging หรือไม่ (default: false) */
   enableLogging?: boolean
 }
 
 /**
- * CRUD Operations Return Type
+ * Interface สำหรับ return value ของ useCrudOperations
  */
 export interface CrudOperations<T extends BaseEntity> {
-  /** ดูรายละเอียด */
+  /** ฟังก์ชันสำหรับดูรายละเอียด */
   viewItem: (item: T) => void
-  
-  /** แก้ไข */
+  /** ฟังก์ชันสำหรับแก้ไขข้อมูล */
   editItem: (item: T) => void
-  
-  /** ลบ */
+  /** ฟังก์ชันสำหรับลบข้อมูล */
   deleteItem: (item: T, options?: DeleteOptions) => void
-  
-  /** Handle custom action */
+  /** ฟังก์ชันสำหรับดำเนินการ custom action */
   handleCustomAction: (actionKey: string, item: T, options?: CustomActionOptions<T>) => Promise<void>
-  
-  /** Get display name */
+  /** ฟังก์ชันสำหรับดึงชื่อแสดงผลของ entity */
   getDisplayName: (item: T) => string
-  
-  /** State */
+  /** สถานะว่ากำลังลบหรือไม่ */
   isDeleting: Ref<boolean>
+  /** สถานะว่ากำลังประมวลผล action หรือไม่ */
   isProcessing: Ref<boolean>
+  /** Action ที่กำลังดำเนินการอยู่ */
   currentAction: Ref<string | null>
 }
 
-// ======= MAIN COMPOSABLE =======
-
 /**
- * Enhanced CRUD Operations Composable
+ * Composable สำหรับจัดการ CRUD operations
+ * รองรับการดู แก้ไข ลบ และ custom actions
+ * 
+ * @param config - การตั้งค่า CRUD config
+ * @returns CrudOperations object พร้อม functions และ reactive states
  * 
  * @example
  * const crud = useCrudOperations<Citizen>({
  *   routePrefix: 'citizens',
- *   entityDisplayName: 'ประชาชน',
+ *   entityDisplayName: 'ประชากร',
  *   displayField: 'citizen_id',
  *   customActions: {
- *     generateCard: {
- *       key: 'generateCard',
- *       label: 'สร้างบัตร',
- *       handler: async (item) => {
- *         // Handle logic
- *       }
- *     }
+ *     generateCard: { ... }
  *   }
  * })
  */
 export function useCrudOperations<T extends BaseEntity>(
   config: CrudConfig<T>
 ): CrudOperations<T> {
-  
-  // ======= STATE =======
+  // State management
   const isDeleting = ref(false)
   const isProcessing = ref(false)
   const currentAction = ref<string | null>(null)
 
-  // ======= HELPER FUNCTIONS =======
-
   /**
-   * Log function (เปิดใช้งานตาม config)
+   * ฟังก์ชัน log สำหรับการตรวจสอบ
    */
-  function log(message: string, data?: any) {
+  function log(message: string, data?: any): void {
     if (config.enableLogging !== false) {
-      console.log(`[${config.entityDisplayName}] ${message}`, data || '')
+      console.log(`[${config.entityDisplayName}] ${message}`, data)
     }
   }
 
   /**
-   * Get display name ของ item
+   * ดึงชื่อแสดงผลของ entity
    */
   function getDisplayName(item: T): string {
     if (!config.displayField) {
       return `ID: ${item.id}`
     }
-    
+
     if (typeof config.displayField === 'function') {
       return config.displayField(item)
     }
-    
+
     const fieldValue = item[config.displayField]
     return fieldValue ? String(fieldValue) : `ID: ${item.id}`
   }
 
   /**
-   * Format timestamp
+   * สร้าง timestamp ปัจจุบัน
    */
   function getTimestamp(): string {
     return new Date().toLocaleString('th-TH', {
@@ -232,10 +219,8 @@ export function useCrudOperations<T extends BaseEntity>(
     })
   }
 
-  // ======= CRUD OPERATIONS =======
-
   /**
-   * View item - นำทางไปหน้า show
+   * ฟังก์ชันสำหรับดูรายละเอียด
    */
   function viewItem(item: T): void {
     log('View item', {
@@ -253,7 +238,7 @@ export function useCrudOperations<T extends BaseEntity>(
         },
         onError: (errors) => {
           log('View error', { id: item.id, errors })
-          toast.error('เกิดข้อผิดพลาดในการดูรายละเอียด')
+          toast.error('ไม่สามารถดูรายละเอียดได้')
         }
       })
     } catch (error) {
@@ -263,7 +248,7 @@ export function useCrudOperations<T extends BaseEntity>(
   }
 
   /**
-   * Edit item - นำทางไปหน้า edit
+   * ฟังก์ชันสำหรับแก้ไขข้อมูล
    */
   function editItem(item: T): void {
     log('Edit item', {
@@ -281,7 +266,7 @@ export function useCrudOperations<T extends BaseEntity>(
         },
         onError: (errors) => {
           log('Edit error', { id: item.id, errors })
-          toast.error('เกิดข้อผิดพลาดในการแก้ไข')
+          toast.error('ไม่สามารถแก้ไขได้')
         }
       })
     } catch (error) {
@@ -291,10 +276,9 @@ export function useCrudOperations<T extends BaseEntity>(
   }
 
   /**
-   * Delete item - ลบข้อมูล
+   * ฟังก์ชันสำหรับลบข้อมูล
    */
-  function deleteItem(item: T, options: DeleteOptions = {}): void {
-    // Merge กับ default options
+  function deleteItem(item: T, options?: DeleteOptions): void {
     const mergedOptions: DeleteOptions = {
       confirm: true,
       preserveScroll: true,
@@ -311,67 +295,65 @@ export function useCrudOperations<T extends BaseEntity>(
     })
 
     const displayName = getDisplayName(item)
-    
+
     // แสดง confirmation dialog
     if (mergedOptions.confirm) {
-      const confirmMessage = mergedOptions.confirmMessage ||
+      const confirmMessage =
+        mergedOptions.confirmMessage ||
         config.messages?.deleteConfirm ||
-        `คุณต้องการลบ${config.entityDisplayName} "${displayName}" หรือไม่?`
-      
+        `คุณต้องการลบ ${config.entityDisplayName} "${displayName}" หรือไม่?`
+
       if (!confirm(confirmMessage)) {
         log('Delete cancelled by user', { id: item.id })
         return
       }
     }
 
-    // Set loading state
     isDeleting.value = true
     currentAction.value = 'delete'
 
     router.delete(route(`${config.routePrefix}.destroy`, item.id), {
       preserveScroll: mergedOptions.preserveScroll,
       preserveState: mergedOptions.preserveState,
-      
       onSuccess: () => {
         isDeleting.value = false
         currentAction.value = null
 
-        const successMessage = mergedOptions.successMessage ||
+        const successMessage =
+          mergedOptions.successMessage ||
           config.messages?.deleteSuccess ||
-          `ลบ${config.entityDisplayName} "${displayName}" เรียบร้อยแล้ว`
-        
+          `ลบ ${config.entityDisplayName} "${displayName}" สำเร็จ`
+
         log('Delete success', {
           id: item.id,
           displayName,
           timestamp: getTimestamp()
         })
-        
+
         toast.success(successMessage)
-        
-        // Callback
+
         if (mergedOptions.onSuccess) {
           mergedOptions.onSuccess()
         }
       },
-      
       onError: (errors) => {
         isDeleting.value = false
         currentAction.value = null
 
-        const errorMessage = mergedOptions.errorMessage ||
+        const errorMessage =
+          mergedOptions.errorMessage ||
           config.messages?.deleteError ||
-          `เกิดข้อผิดพลาดในการลบ${config.entityDisplayName}`
-        
+          `ไม่สามารถลบ ${config.entityDisplayName} ได้`
+
         log('Delete error', {
           id: item.id,
           displayName,
           errors,
           timestamp: getTimestamp()
         })
-        
+
         toast.error(errorMessage)
-        
-        // Callback
+
         if (mergedOptions.onError) {
           mergedOptions.onError(errors)
         }
@@ -380,12 +362,12 @@ export function useCrudOperations<T extends BaseEntity>(
   }
 
   /**
-   * Handle custom action
+   * ฟังก์ชันสำหรับดำเนินการ custom action
    */
   async function handleCustomAction(
     actionKey: string,
     item: T,
-    options: CustomActionOptions<T> = {}
+    options?: CustomActionOptions<T>
   ): Promise<void> {
     log('Custom action initiated', {
       actionKey,
@@ -395,19 +377,20 @@ export function useCrudOperations<T extends BaseEntity>(
     })
 
     const action = config.customActions?.[actionKey]
-    
+
     if (!action) {
       log('Unknown action', {
         actionKey,
         availableActions: Object.keys(config.customActions || {})
       })
-      
-      const unknownMessage = config.messages?.unknownAction || 'ไม่พบคำสั่งที่ระบุ'
+
+      const unknownMessage =
+        config.messages?.unknownAction || `ไม่พบคำสั่ง "${actionKey}"`
+
       toast.error(unknownMessage)
       return
     }
 
-    // Merge options
     const mergedOptions: CustomActionOptions<T> = {
       showLoading: true,
       confirm: false,
@@ -415,53 +398,56 @@ export function useCrudOperations<T extends BaseEntity>(
       ...options
     }
 
-    // Confirmation
+    // แสดง confirmation dialog ถ้าต้องการ
     if (mergedOptions.confirm) {
-      const confirmMessage = mergedOptions.confirmMessage ||
-        `คุณต้องการ${action.label}หรือไม่?`
-      
+      const confirmMessage =
+        mergedOptions.confirmMessage ||
+        `คุณต้องการดำเนินการ "${action.label}" หรือไม่?`
+
       if (!confirm(confirmMessage)) {
-        log('Custom action cancelled by user', { actionKey, itemId: item.id })
+        log('Custom action cancelled by user', {
+          actionKey,
+          itemId: item.id
+        })
         return
       }
     }
 
-    // Set loading state
+    // แสดง loading indicator
     if (mergedOptions.showLoading) {
       isProcessing.value = true
       currentAction.value = actionKey
-      
+
       if (mergedOptions.loadingMessage) {
         toast.loading(mergedOptions.loadingMessage)
       }
     }
 
     try {
-      // Transform data ถ้ามี
+      // แปลงข้อมูลถ้ามี transformData function
       const transformedItem = mergedOptions.transformData
         ? mergedOptions.transformData(item)
         : item
 
-      // Execute handler
+      // เรียก handler
       const result = await action.handler(transformedItem, mergedOptions)
 
-      // Success
       log('Custom action success', {
         actionKey,
         itemId: item.id,
         timestamp: getTimestamp()
       })
 
+      // แสดงข้อความสำเร็จ
       if (mergedOptions.successMessage) {
         toast.success(mergedOptions.successMessage)
       }
 
+      // เรียก callback ถ้ามี
       if (mergedOptions.onSuccess) {
         mergedOptions.onSuccess(item, result)
       }
-
     } catch (error) {
-      // Error
       log('Custom action error', {
         actionKey,
         itemId: item.id,
@@ -469,17 +455,18 @@ export function useCrudOperations<T extends BaseEntity>(
         timestamp: getTimestamp()
       })
 
-      const errorMessage = mergedOptions.errorMessage ||
-        `เกิดข้อผิดพลาดในการ${action.label}`
-      
+      const errorMessage =
+        mergedOptions.errorMessage ||
+        `ไม่สามารถดำเนินการ "${action.label}" ได้`
+
       toast.error(errorMessage)
 
+      // เรียก error callback ถ้ามี
       if (mergedOptions.onError) {
         mergedOptions.onError(item, error)
       }
-
     } finally {
-      // Reset loading state
+      // ปิด loading indicator
       if (mergedOptions.showLoading) {
         isProcessing.value = false
         currentAction.value = null
@@ -488,18 +475,12 @@ export function useCrudOperations<T extends BaseEntity>(
     }
   }
 
-  // ======= RETURN =======
   return {
-    // Operations
     viewItem,
     editItem,
     deleteItem,
     handleCustomAction,
-    
-    // Helpers
     getDisplayName,
-    
-    // State
     isDeleting,
     isProcessing,
     currentAction

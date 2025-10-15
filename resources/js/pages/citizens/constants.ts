@@ -1,17 +1,34 @@
 // ไฟล์: resources/js/pages/citizens/constants.ts
+// ประกาศ constants และ UI config สำหรับหน้า Citizens
+
 import { 
   CreditCard, 
   History, 
   Printer, 
   FileSpreadsheet
 } from 'lucide-vue-next'
-import type { CustomAction } from '@/composables/useColumnBuilder'
+import type { Component } from 'vue'
 
 /**
- * Custom actions สำหรับ Citizen
- * ใช้ CustomAction type จาก useColumnBuilder
+ * Interface สำหรับ UI Config ของ Custom Action
+ * ไม่รวม handler เพราะจะถูกเพิ่มทีหลังใน use.ts
  */
-export const CITIZEN_CUSTOM_ACTIONS: CustomAction[] = [
+export interface CitizenActionUIConfig {
+  key: string
+  label: string
+  icon?: Component
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
+  separator?: boolean
+  className?: string
+  visible?: boolean
+  disabled?: boolean
+}
+
+/**
+ * กำหนด UI Config สำหรับ Citizen Actions
+ * Handler จะถูกเพิ่มใน use.ts
+ */
+export const CITIZEN_ACTIONS_UI_CONFIG: CitizenActionUIConfig[] = [
   { 
     key: 'generateCard', 
     label: 'สร้างบัตร', 
@@ -41,7 +58,7 @@ export const CITIZEN_CUSTOM_ACTIONS: CustomAction[] = [
 ] as const
 
 /**
- * Display fields mapping
+ * กำหนด field names ที่ใช้แสดงผล
  */
 export const CITIZEN_DISPLAY_FIELDS = {
   ID_FIELD: 'citizen_id',
@@ -50,7 +67,7 @@ export const CITIZEN_DISPLAY_FIELDS = {
 } as const
 
 /**
- * Column CSS classes
+ * กำหนด CSS classes สำหรับแต่ละ column
  */
 export const CITIZEN_COLUMN_CLASSES = {
   ID: 'w-16',
@@ -61,7 +78,7 @@ export const CITIZEN_COLUMN_CLASSES = {
 } as const
 
 /**
- * Searchable fields
+ * กำหนด fields ที่ใช้ในการค้นหา
  */
 export const CITIZEN_SEARCH_FIELDS = [
   'citizen_id',
@@ -71,12 +88,12 @@ export const CITIZEN_SEARCH_FIELDS = [
 ] as const
 
 /**
- * Page size options
+ * ตัวเลือกจำนวนแถวต่อหน้า
  */
 export const CITIZEN_PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const
 
 /**
- * Citizen status enum
+ * Enum สำหรับ Citizen Status
  */
 export enum CitizenStatus {
   ACTIVE = 'active',
@@ -85,6 +102,6 @@ export enum CitizenStatus {
 }
 
 /**
- * Type สำหรับ action keys
+ * Type helper สำหรับ action keys
  */
-export type CitizenActionKey = typeof CITIZEN_CUSTOM_ACTIONS[number]['key']
+export type CitizenActionKey = typeof CITIZEN_ACTIONS_UI_CONFIG[number]['key']
