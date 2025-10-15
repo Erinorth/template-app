@@ -15,24 +15,20 @@ class CitizenController extends Controller
     /**
      * แสดงรายการข้อมูลประชาชนทั้งหมด
      */
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         // ค่าที่ใช้สำหรับจัดเรียงข้อมูล (sort)
         $sort = $request->input('sort', 'id');
         $direction = $request->input('direction', 'desc');
         $validSorts = ['id', 'citizen_id', 'birth_date', 'remark', 'created_at'];
 
-        // ตรวจสอบว่า sort และ direction ถูกต้อง
         if (!in_array($sort, $validSorts)) {
             $sort = 'id';
         }
         if (!in_array(strtolower($direction), ['asc', 'desc'])) {
             $direction = 'desc';
         }
-
-        // จำนวนรายการต่อหน้า
         $perPage = (int) $request->input('per_page', 10);
-        $perPage = max(5, min($perPage, 100)); // จำกัดค่าระหว่าง 5-100
 
         // ตัวแปรกรองข้อมูล/ค้นหา
         $search = $request->input('search');
@@ -42,16 +38,12 @@ class CitizenController extends Controller
 
         // ถ้ามีค่า search ให้ filter หลายคอลัมน์
         if ($search) {
-            \Log::info('Citizen search filter', [
-                'search' => $search,
-                'user_id' => auth()->id(),
-            ]);
-            
+            \Log::info('Citizen search filter', ['search' => $search]);
             $query->where(function ($q) use ($search) {
                 $q->where('citizen_id', 'like', '%' . $search . '%')
                   ->orWhere('remark', 'like', '%' . $search . '%')
                   ->orWhere('birth_date', 'like', '%' . $search . '%')
-                  ->orWhere('id', $search);
+                  ->orWhere('id', $search); // id ให้ค้นหาตรงๆ
             });
         }
 
@@ -59,48 +51,19 @@ class CitizenController extends Controller
         $citizens = $query
             ->orderBy($sort, $direction)
             ->paginate($perPage)
-            ->withQueryString()
-            ->through(function ($citizen) use ($request) {
-                // เพิ่มข้อมูลสิทธิ์สำหรับแต่ละ citizen
-                return [
-                    'id' => $citizen->id,
-                    'citizen_id' => $citizen->citizen_id,
-                    'birth_date' => $citizen->birth_date,
-                    'remark' => $citizen->remark,
-                    'created_at' => $citizen->created_at?->toIso8601String(),
-                    'updated_at' => $citizen->updated_at?->toIso8601String(),
-                    // เพิ่ม permission สำหรับแต่ละ item
-                    'can' => [
-                        'edit' => true, // สามารถใช้ Policy ได้ เช่น: $request->user()?->can('update', $citizen) ?? false,
-                        'delete' => true, // สามารถใช้ Policy ได้ เช่น: $request->user()?->can('delete', $citizen) ?? false,
-                    ],
-                ];
-            });
+            ->withQueryString();
 
-        // log การเข้าถึง
-        \Log::info('Citizen index accessed', [
-            'sort' => $sort,
-            'direction' => $direction,
-            'per_page' => $perPage,
-            'search' => $search,
-            'total_records' => $citizens->total(),
-            'user_id' => auth()->id(),
-        ]);
+        // log
+        \Log::info('Citizen index fetch', compact('sort', 'direction', 'perPage'));
 
         // ส่งข้อมูลไป frontend
         return Inertia::render('citizens/Index', [
-            'title' => 'จัดการข้อมูลประชาชน',
+            'title' => 'Citizens',
             'citizens' => $citizens,
-            'filters' => [
-                'sort' => $sort,
-                'direction' => $direction,
-                'search' => $search,
-                'per_page' => $perPage,
-            ],
-            // ส่งข้อมูลสิทธิ์ global สำหรับหน้านี้
-            'can' => [
-                'create' => true, // สามารถใช้ Policy ได้ เช่น: $request->user()?->can('create', Citizen::class) ?? false,
-            ],
+            'sort' => $sort,
+            'direction' => $direction,
+            // เพิ่ม query string ทั้งหมดให้ frontend สามารถอ่านค่า search ได้ (กรณี reload)
+            'query' => $request->query()
         ]);
     }
 
