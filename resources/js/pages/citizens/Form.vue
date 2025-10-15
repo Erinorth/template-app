@@ -12,11 +12,8 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, Save, X, ArrowLeft } from 'lucide-vue-next'
 
+// ... (interface และ props เดิม)
 
-
-/**
- * Interface สำหรับ Citizen model
- */
 interface Citizen {
   id?: number
   citizen_id: string
@@ -24,52 +21,24 @@ interface Citizen {
   remark: string | null
 }
 
-
-
-/**
- * Define props สำหรับ component
- * รับ citizen สำหรับโหมด edit (ถ้าไม่มีจะเป็นโหมด create)
- */
 const props = defineProps<{
   title?: string
   citizen?: Citizen
 }>()
 
-
-
-/**
- * Computed: ตรวจสอบโหมดการทำงาน
- * ถ้ามี citizen prop จะเป็นโหมด edit
- */
 const isEditMode = computed(() => !!props.citizen?.id)
 
-
-
-/**
- * Computed: Page title ตามโหมด
- */
 const pageTitle = computed(() => {
   if (props.title) return props.title
   return isEditMode.value ? 'แก้ไขข้อมูลประชาชน' : 'เพิ่มข้อมูลประชาชน'
 })
 
-
-
-/**
- * Computed: Page description ตามโหมด
- */
 const pageDescription = computed(() => {
   return isEditMode.value 
     ? 'แก้ไขข้อมูลประชาชนในระบบ' 
     : 'กรอกข้อมูลเพื่อเพิ่มประชาชนเข้าสู่ระบบ'
 })
 
-
-
-/**
- * Breadcrumb items สำหรับ navigation
- * ปรับตามโหมดการทำงาน
- */
 const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   const baseCrumbs = [
     { title: 'หน้าหลัก', href: route('dashboard') },
@@ -91,40 +60,22 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   return baseCrumbs
 })
 
-
-
-/**
- * Form data และ validation
- * ใช้ useForm จาก Inertia สำหรับจัดการ form state
- * ถ้าเป็นโหมด edit จะใช้ข้อมูลจาก props.citizen
- */
 const form = useForm({
   citizen_id: props.citizen?.citizen_id || '',
   birth_date: props.citizen?.birth_date || '',
   remark: props.citizen?.remark || '',
 })
 
-
-
-/**
- * State สำหรับการ submit
- */
 const isSubmitting = ref(false)
-
-
 
 /**
  * ฟังก์ชัน format เลขประจำตัวประชาชน
  * จัดรูปแบบให้เป็น X-XXXX-XXXXX-XX-X
  */
 function formatCitizenId(value: string): string {
-  // ลบทุกอักขระที่ไม่ใช่ตัวเลข
   const cleaned = value.replace(/\D/g, '')
-  
-  // จำกัดความยาวไม่เกิน 13 ตัว
   const limited = cleaned.substring(0, 13)
   
-  // จัดรูปแบบตามความยาว
   if (limited.length <= 1) return limited
   if (limited.length <= 5) return `${limited.substring(0, 1)}-${limited.substring(1)}`
   if (limited.length <= 10) return `${limited.substring(0, 1)}-${limited.substring(1, 5)}-${limited.substring(5)}`
@@ -133,12 +84,14 @@ function formatCitizenId(value: string): string {
   return `${limited.substring(0, 1)}-${limited.substring(1, 5)}-${limited.substring(5, 10)}-${limited.substring(10, 12)}-${limited.substring(12)}`
 }
 
-
-
 /**
- * Handle citizen ID input
- * จัดการการกรอกเลขประจำตัวประชาชน
+ * ✅ ฟังก์ชันลบขีดและอักขระพิเศษ เหลือเฉพาะตัวเลข
+ * สำหรับส่งข้อมูลไปยัง Backend
  */
+function cleanCitizenId(value: string): string {
+  return value.replace(/\D/g, '')
+}
+
 function handleCitizenIdInput(event: Event) {
   const input = event.target as HTMLInputElement
   const formatted = formatCitizenId(input.value)
@@ -147,18 +100,11 @@ function handleCitizenIdInput(event: Event) {
   console.log('Citizen ID input:', { original: input.value, formatted })
 }
 
-
-
-/**
- * Validate citizen ID
- * ตรวจสอบความถูกต้องของเลขประจำตัวประชาชน
- */
 const isCitizenIdValid = computed(() => {
-  const cleaned = form.citizen_id.replace(/\D/g, '')
+  const cleaned = cleanCitizenId(form.citizen_id)
   
   if (cleaned.length !== 13) return false
   
-  // คำนวณ checksum digit
   let sum = 0
   for (let i = 0; i < 12; i++) {
     sum += parseInt(cleaned[i]) * (13 - i)
@@ -168,15 +114,10 @@ const isCitizenIdValid = computed(() => {
   return checkDigit === parseInt(cleaned[12])
 })
 
-
-
-/**
- * Computed: แสดง validation message สำหรับ citizen ID
- */
 const citizenIdValidationMessage = computed(() => {
   if (!form.citizen_id) return ''
   
-  const cleaned = form.citizen_id.replace(/\D/g, '')
+  const cleaned = cleanCitizenId(form.citizen_id)
   
   if (cleaned.length > 0 && cleaned.length < 13) {
     return 'กรุณากรอกเลขประจำตัวประชาชนให้ครบ 13 หลัก'
@@ -189,11 +130,6 @@ const citizenIdValidationMessage = computed(() => {
   return ''
 })
 
-
-
-/**
- * Computed: แสดง validation message สำหรับวันเกิด
- */
 const birthDateValidationMessage = computed(() => {
   if (!form.birth_date) return ''
   
@@ -209,7 +145,6 @@ const birthDateValidationMessage = computed(() => {
     return 'วันเกิดต้องหลังปี ค.ศ. 1900'
   }
   
-  // คำนวณอายุ
   const age = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25))
   
   if (age > 150) {
@@ -219,11 +154,6 @@ const birthDateValidationMessage = computed(() => {
   return `อายุ ${age} ปี`
 })
 
-
-
-/**
- * Computed: ตรวจสอบว่าฟอร์มสามารถ submit ได้หรือไม่
- */
 const canSubmit = computed(() => {
   return form.citizen_id && 
          isCitizenIdValid.value && 
@@ -231,30 +161,34 @@ const canSubmit = computed(() => {
          !citizenIdValidationMessage.value.includes('ไม่ถูกต้อง')
 })
 
-
-
 /**
- * Submit form
- * ส่งข้อมูลไปยัง server
- * ถ้าเป็นโหมด edit จะใช้ put method และส่งไปที่ route citizens.update
- * ถ้าเป็นโหมด create จะใช้ post method และส่งไปที่ route citizens.store
+ * ✅ Submit form - แก้ไขให้ลบขีดออกก่อนส่ง
  */
 function submit() {
-  // ตรวจสอบความถูกต้องก่อน submit
   if (!canSubmit.value) {
     toast.error('กรุณาตรวจสอบข้อมูลที่กรอกให้ถูกต้อง')
     return
   }
   
   const mode = isEditMode.value ? 'edit' : 'create'
-  console.log(`CitizenForm: Submitting form (${mode} mode)`, form.data())
+  
+  // ✅ เตรียมข้อมูลที่จะส่ง - ลบขีดออกจาก citizen_id
+  const submitData = {
+    citizen_id: cleanCitizenId(form.citizen_id), // ส่งเฉพาะตัวเลข 13 หลัก
+    birth_date: form.birth_date,
+    remark: form.remark,
+  }
+  
+  console.log(`CitizenForm: Submitting form (${mode} mode)`, {
+    original: form.data(),
+    cleaned: submitData
+  })
   
   isSubmitting.value = true
   
-  // เลือก route และ method ตามโหมด
   if (isEditMode.value) {
-    // โหมด edit ใช้ put method
-    form.put(route('citizens.update', props.citizen!.id!), {
+    // ✅ โหมด edit - ใช้ transform เพื่อแปลงข้อมูลก่อนส่ง
+    form.transform(() => submitData).put(route('citizens.update', props.citizen!.id!), {
       preserveScroll: true,
       onSuccess: () => {
         console.log('CitizenForm: Form updated successfully')
@@ -269,8 +203,8 @@ function submit() {
       }
     })
   } else {
-    // โหมด create ใช้ post method
-    form.post(route('citizens.store'), {
+    // ✅ โหมด create - ใช้ transform เพื่อแปลงข้อมูลก่อนส่ง
+    form.transform(() => submitData).post(route('citizens.store'), {
       preserveScroll: true,
       onSuccess: () => {
         console.log('CitizenForm: Form created successfully')
@@ -287,16 +221,10 @@ function submit() {
   }
 }
 
-
-
-/**
- * Cancel และกลับไปหน้า index
- */
 function cancel() {
   const mode = isEditMode.value ? 'edit' : 'create'
   console.log(`CitizenForm: Canceling form (${mode} mode)`)
   
-  // ถ้ามีการกรอกข้อมูล ให้แสดง confirmation
   if (form.isDirty) {
     const message = isEditMode.value 
       ? 'คุณต้องการยกเลิกการแก้ไขข้อมูลหรือไม่? การเปลี่ยนแปลงจะไม่ถูกบันทึก'
@@ -311,25 +239,12 @@ function cancel() {
   }
 }
 
-
-
-/**
- * Reset form
- * สำหรับ create จะล้างข้อมูลทั้งหมด
- * สำหรับ edit จะคืนค่ากลับไปเป็นค่าเริ่มต้นจาก props.citizen
- */
 function resetForm() {
   console.log(`CitizenForm: Resetting form (${isEditMode.value ? 'edit' : 'create'} mode)`)
   form.reset()
   toast.success('รีเซ็ตข้อมูลฟอร์มเรียบร้อยแล้ว')
 }
 
-
-
-/**
- * Component mounted lifecycle
- * Log เมื่อ component ถูก mount และแสดงโหมดที่ใช้งาน
- */
 onMounted(() => {
   console.log('CitizenForm: Component initialized', {
     mode: isEditMode.value ? 'edit' : 'create',
@@ -338,18 +253,12 @@ onMounted(() => {
 })
 </script>
 
-
-
+<!-- Template เดิม ไม่ต้องแก้ -->
 <template>
-  <!-- Head สำหรับ page title -->
   <Head :title="pageTitle" />
 
-
-  <!-- AppLayout แบบส่ง breadcrumbs เป็น prop -->
   <AppLayout :breadcrumbs="breadcrumbs">
-    <!-- Main Content -->
     <div class="container mx-auto py-6 px-4 sm:px-6 lg:px-8 max-w-4xl">
-      <!-- Page Header -->
       <div class="mb-6">
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
           {{ pageTitle }}
@@ -359,8 +268,6 @@ onMounted(() => {
         </p>
       </div>
 
-
-      <!-- Form Card -->
       <Card>
         <CardHeader>
           <CardTitle>ข้อมูลประชาชน</CardTitle>
@@ -368,7 +275,6 @@ onMounted(() => {
             {{ isEditMode ? 'แก้ไข' : 'กรอก' }}ข้อมูลพื้นฐานของประชาชน ฟิลด์ที่มีเครื่องหมาย * เป็นฟิลด์ที่จำเป็น
           </CardDescription>
         </CardHeader>
-
 
         <CardContent>
           <form @submit.prevent="submit" class="space-y-6">
@@ -393,7 +299,6 @@ onMounted(() => {
                 required
               />
               
-              <!-- Validation Messages -->
               <p 
                 v-if="form.errors.citizen_id" 
                 class="text-sm text-red-500 flex items-center gap-1"
@@ -423,7 +328,6 @@ onMounted(() => {
               </p>
             </div>
 
-
             <!-- Birth Date Field -->
             <div class="space-y-2">
               <Label for="birth_date">
@@ -440,7 +344,6 @@ onMounted(() => {
                 :disabled="isSubmitting"
               />
               
-              <!-- Validation Messages -->
               <p 
                 v-if="form.errors.birth_date" 
                 class="text-sm text-red-500 flex items-center gap-1"
@@ -464,7 +367,6 @@ onMounted(() => {
               </p>
             </div>
 
-
             <!-- Remark Field -->
             <div class="space-y-2">
               <Label for="remark">
@@ -480,7 +382,6 @@ onMounted(() => {
                 :disabled="isSubmitting"
               />
               
-              <!-- Validation Messages -->
               <p 
                 v-if="form.errors.remark" 
                 class="text-sm text-red-500 flex items-center gap-1"
@@ -495,8 +396,6 @@ onMounted(() => {
               </p>
             </div>
 
-
-            <!-- Alert สำหรับ Form Errors -->
             <Alert v-if="Object.keys(form.errors).length > 0" variant="destructive">
               <AlertCircle class="h-4 w-4" />
               <AlertDescription>
@@ -504,8 +403,6 @@ onMounted(() => {
               </AlertDescription>
             </Alert>
 
-
-            <!-- Form Actions -->
             <div class="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t">
               <Button
                 type="button"
@@ -543,8 +440,6 @@ onMounted(() => {
         </CardContent>
       </Card>
 
-
-      <!-- Help Card -->
       <Card class="mt-6 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
         <CardHeader>
           <CardTitle class="text-blue-900 dark:text-blue-100 text-base">

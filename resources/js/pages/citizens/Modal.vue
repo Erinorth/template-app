@@ -40,7 +40,7 @@ const form = useForm({
   remark: '',
 })
 
-// ฟังก์ชัน format citizen ID
+// ฟังก์ชัน format citizen ID สำหรับแสดงผล (มีขีด)
 function formatCitizenId(value: string): string {
   if (!value) return ''
   
@@ -58,9 +58,14 @@ function formatCitizenId(value: string): string {
   return `${limited.substring(0, 1)}-${limited.substring(1, 5)}-${limited.substring(5, 10)}-${limited.substring(10, 12)}-${limited.substring(12)}`
 }
 
+// ✅ ฟังก์ชันลบขีดและอักขระพิเศษ เหลือเฉพาะตัวเลข
+function cleanCitizenId(value: string): string {
+  return String(value).replace(/\D/g, '')
+}
+
 // ตรวจสอบ citizen ID ด้วย checksum
 const isCitizenIdValid = computed(() => {
-  const cleaned = form.citizen_id.replace(/\D/g, '')
+  const cleaned = cleanCitizenId(form.citizen_id)
   if (cleaned.length !== 13) return false
 
   let sum = 0
@@ -74,7 +79,7 @@ const isCitizenIdValid = computed(() => {
 // Computed ข้อความแจ้งเตือน
 const citizenIdValidationMessage = computed(() => {
   if (!form.citizen_id) return ''
-  const cleaned = form.citizen_id.replace(/\D/g, '')
+  const cleaned = cleanCitizenId(form.citizen_id)
   if (cleaned.length === 0 || cleaned.length === 13) return ''
   if (cleaned.length < 13) return `กรุณากรอกให้ครบ 13 หลัก (ป้อนแล้ว ${cleaned.length} หลัก)`
   if (cleaned.length === 13 && !isCitizenIdValid.value)
@@ -116,11 +121,11 @@ const submitButtonText = computed(() => {
   return props.mode === 'edit' ? 'บันทึกการแก้ไข' : 'เพิ่มข้อมูล'
 })
 
-// ✅ ฟังก์ชันโหลดข้อมูล - ง่ายขึ้นเพราะใช้ชื่อเดียวกัน
+// ✅ ฟังก์ชันโหลดข้อมูล
 function loadCitizenData(citizen: Citizen) {
   console.log('📥 Loading citizen data:', citizen)
 
-  // กำหนดค่าโดยตรง - ไม่ต้องแปลงชื่อฟิลด์
+  // กำหนดค่าโดยตรง - แสดง citizen_id แบบมีขีด
   form.citizen_id = citizen.citizen_id ? formatCitizenId(citizen.citizen_id) : ''
   form.birth_date = citizen.birth_date ?? ''
   form.remark = citizen.remark ?? ''
@@ -163,9 +168,16 @@ function handleCitizenIdInput(event: Event) {
   form.citizen_id = formatCitizenId(input.value)
 }
 
-// Submit form
+// ✅ Submit form - ลบขีดออกก่อนส่ง
 function submitForm() {
-  console.log('📤 Submitting:', form.data())
+  // เตรียมข้อมูลสำหรับส่ง - ลบขีดออกจาก citizen_id
+  const submitData = {
+    citizen_id: cleanCitizenId(form.citizen_id), // ✅ ส่งเฉพาะตัวเลข 13 หลัก
+    birth_date: form.birth_date,
+    remark: form.remark,
+  }
+
+  console.log('📤 Submitting (cleaned):', submitData)
   isSubmitting.value = true
 
   const isEditMode = props.mode === 'edit'
@@ -174,7 +186,8 @@ function submitForm() {
     : route('citizens.store')
   const submitMethod = isEditMode ? 'put' : 'post'
 
-  form[submitMethod](submitRoute, {
+  // ✅ ใช้ form.transform() เพื่อแปลงข้อมูลก่อนส่ง
+  form.transform(() => submitData)[submitMethod](submitRoute, {
     preserveScroll: true,
     onSuccess: () => {
       toast.success(
