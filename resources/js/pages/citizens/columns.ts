@@ -1,5 +1,8 @@
-// ไฟล์: resources/js/pages/citizens/columns.ts
-import type { ComputedRef } from 'vue'
+/**
+ * ไฟล์: resources/js/pages/citizens/columns.ts
+ * คำอธิบาย: สร้าง columns configuration สำหรับตาราง citizens
+ */
+
 import { useColumnBuilder, type ColumnConfig, type ColumnCallbacks } from '@/composables/useColumnBuilder'
 import type { Citizen } from './types'
 import { 
@@ -9,8 +12,13 @@ import {
 } from './constants'
 
 /**
- * สร้าง columns configuration สำหรับ Citizens table
- * พร้อมรองรับ custom actions และ responsive design
+ * Hook สำหรับสร้าง columns configuration สำหรับตาราง citizens
+ * @param onSort - callback เมื่อมีการเรียงลำดับ
+ * @param onView - callback เมื่อกดดูข้อมูล
+ * @param onEdit - callback เมื่อกดแก้ไข
+ * @param onDelete - callback เมื่อกดลบ
+ * @param onCustomAction - callback เมื่อกด custom action
+ * @returns columns configuration
  */
 export function useCitizenColumns(
   onSort: (field: string) => void,
@@ -19,40 +27,40 @@ export function useCitizenColumns(
   onDelete: (citizen: Citizen) => void,
   onCustomAction: (actionKey: string, citizen: Citizen) => void
 ) {
-  
+  // สร้าง column builder
   const { createColumns } = useColumnBuilder<Citizen>()
 
-  // กำหนด column configurations
-  const columnConfigs: ColumnConfig<Citizen>[] = [
-    // Column สำหรับ expand rows
+  // กำหนดค่า column configurations
+  const columnConfigs: ColumnConfig[] = [
+    // Expand column สำหรับแสดงรายละเอียดเพิ่มเติม
     { 
       type: 'expand' 
     },
     
-    // ID column (ซ่อนได้)
+    // ID column
     {
       type: 'id',
-      key: 'id',
+      key: 'id' as string,
       header: 'ID',
       sortable: true,
       enableHiding: true,
       className: CITIZEN_COLUMN_CLASSES.ID
     },
     
-    // เลขประจำตัวประชาชน (หลักและไม่สามารถซ่อนได้)
+    // เลขบัตรประชาชน
     {
       type: 'text',
-      key: CITIZEN_DISPLAY_FIELDS.ID_FIELD as keyof Citizen, // เพิ่ม type assertion
+      key: CITIZEN_DISPLAY_FIELDS.ID_FIELD as string,
       header: 'เลขประจำตัวประชาชน',
       sortable: true,
-      enableHiding: false, // ไม่อนุญาตให้ซ่อน
+      enableHiding: false, // ห้ามซ่อน column นี้
       className: CITIZEN_COLUMN_CLASSES.CITIZEN_ID
     },
     
     // วันเกิด
     {
       type: 'date',
-      key: CITIZEN_DISPLAY_FIELDS.DATE_FIELD as keyof Citizen, // เพิ่ม type assertion
+      key: CITIZEN_DISPLAY_FIELDS.DATE_FIELD as string,
       header: 'วันเกิด',
       sortable: true,
       includeTime: false,
@@ -60,14 +68,13 @@ export function useCitizenColumns(
       className: CITIZEN_COLUMN_CLASSES.DATE
     },
     
-    // หมายเหตุ
+    // หมายเหตุ - ลบ placeholder ออก
     {
       type: 'text',
-      key: CITIZEN_DISPLAY_FIELDS.REMARK_FIELD as keyof Citizen, // เพิ่ม type assertion
+      key: CITIZEN_DISPLAY_FIELDS.REMARK_FIELD as string,
       header: 'หมายเหตุ',
       sortable: true,
       maxLength: 50,
-      placeholder: '-', // เพิ่ม placeholder สำหรับค่าว่าง
       enableHiding: true,
       className: CITIZEN_COLUMN_CLASSES.REMARK
     },
@@ -75,7 +82,7 @@ export function useCitizenColumns(
     // วันที่สร้าง
     {
       type: 'date',
-      key: 'created_at',
+      key: 'created_at' as string,
       header: 'สร้างเมื่อ',
       sortable: true,
       includeTime: true,
@@ -83,11 +90,11 @@ export function useCitizenColumns(
       className: CITIZEN_COLUMN_CLASSES.CREATED_AT
     },
 
-    // Actions column
+    // Action column
     {
       type: 'action',
-      idKey: 'id',
-      nameKey: CITIZEN_DISPLAY_FIELDS.ID_FIELD,
+      idKey: 'id' as string,
+      nameKey: CITIZEN_DISPLAY_FIELDS.ID_FIELD as string,
       enableCopy: true,
       enableView: true,
       enableEdit: true,
@@ -97,7 +104,7 @@ export function useCitizenColumns(
     }
   ]
 
-  // Callback functions สำหรับ column actions
+  // กำหนดค่า callbacks
   const callbacks: ColumnCallbacks<Citizen> = {
     onSort,
     onView,
@@ -106,12 +113,13 @@ export function useCitizenColumns(
     onCustomAction
   }
 
-  // Log สำหรับ debugging
+  // Log เพื่อตรวจสอบ
   console.log('📋 Citizen columns: Created columns configuration', {
     totalColumns: columnConfigs.length,
     customActions: CITIZEN_CUSTOM_ACTIONS.length,
     searchableFields: Object.values(CITIZEN_DISPLAY_FIELDS)
   })
 
+  // สร้างและ return columns
   return createColumns(columnConfigs, callbacks)
 }
