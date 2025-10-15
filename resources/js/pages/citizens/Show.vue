@@ -1,138 +1,129 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
-import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem } from '@/types';
-import type { Citizen } from './types';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  ArrowLeft, 
-  Edit, 
-  Trash2, 
-  Calendar, 
-  User, 
+import { computed } from 'vue'
+import { Head, router } from '@inertiajs/vue3'
+import AppLayout from '@/layouts/AppLayout.vue'
+import type { BreadcrumbItem } from '@/types'
+import type { Citizen } from './types'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Calendar,
+  User,
   FileText,
   Clock,
-  Info
-} from 'lucide-vue-next';
-import { formatThaiCitizenId } from '@/lib/utils';
-import { useCitizens } from './use';
+  Info,
+} from 'lucide-vue-next'
+// นำเข้าฟังก์ชันจาก utils
+import { formatThaiCitizenId } from '@/lib/utils'
 
-// Props ที่ส่งมาจาก Controller
+import { useCitizens } from './use'
+
+// Props จาก Controller
 const props = defineProps<{
-  title?: string;
-  citizen: Citizen;
-}>();
+  title?: string
+  citizen: Citizen
+}>()
 
-// Breadcrumb สำหรับการนำทาง
+// Breadcrumb
 const breadcrumbs: BreadcrumbItem[] = [
-  {
-    title: 'Dashboard',
-    href: 'dashboard',
-  },
-  {
-    title: 'ข้อมูลประชากร',
-    href: 'citizens',
-  },
-  {
-    title: 'รายละเอียด',
-    href: `citizens.show`,
-  },
-];
+  { title: 'Dashboard', href: 'dashboard' },
+  { title: 'ข้อมูลประชาชน', href: 'citizens' },
+  { title: 'รายละเอียด', href: 'citizens.show' },
+]
 
-// ใช้ CRUD operations จาก composable
-const { editCitizen, deleteCitizen } = useCitizens();
+// CRUD operations จาก composable
+const { editCitizen, deleteCitizen } = useCitizens()
 
-// จัดรูปแบบวันที่เป็นภาษาไทย - รองรับ undefined
+// ฟังก์ชันจัดรูปแบบวันที่ - แสดงเป็นภาษาไทย
 const formatDate = (date: string | null | undefined): string => {
-  if (!date) return '-';
-  
-  const dateObj = new Date(date);
+  if (!date) return '-'
+  const dateObj = new Date(date)
   return dateObj.toLocaleDateString('th-TH', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  });
-};
+  })
+}
 
-// จัดรูปแบบวันที่และเวลาเป็นภาษาไทย - รองรับ undefined
+// ฟังก์ชันจัดรูปแบบวันที่และเวลา - แสดงเป็นภาษาไทย
 const formatDateTime = (date: string | null | undefined): string => {
-  if (!date) return '-';
-  
-  const dateObj = new Date(date);
+  if (!date) return '-'
+  const dateObj = new Date(date)
   return dateObj.toLocaleString('th-TH', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  });
-};
+  })
+}
 
-// คำนวณอายุจากวันเกิด
+// คำนวณอายุจากวันเกิด - ใช้ birth_date (snake_case)
 const calculateAge = computed(() => {
-  if (!props.citizen.birth_date) return null;
-  
-  const birthDate = new Date(props.citizen.birth_date);
-  const today = new Date();
-  const age = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
-  
-  return age;
-});
+  if (!props.citizen.birth_date) return null
 
-// จัดรูปแบบเลขบัตรประชาชน
+  const birthDate = new Date(props.citizen.birth_date)
+  const today = new Date()
+  const age = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25))
+
+  return `${age} ปี`
+})
+
+// จัดรูปแบบเลขบัตรประชาชน - ใช้ formatThaiCitizenId จาก utils และ citizen_id (snake_case)
 const formattedCitizenId = computed(() => {
-  if (!props.citizen.citizen_id) return '-';
-  return formatThaiCitizenId(props.citizen.citizen_id);
-});
+  if (!props.citizen.citizen_id) return '-'
+  return formatThaiCitizenId(props.citizen.citizen_id)
+})
 
-// ฟังก์ชันสำหรับย้อนกลับไปหน้าก่อนหน้า
+// ฟังก์ชันกลับไปหน้ารายการ
 function goBack() {
-  console.log('[CitizenShow] Navigating back to index');
-  router.visit(route('citizens.index'));
+  console.log('CitizenShow: Navigating back to index')
+  router.visit(route('citizens.index'))
 }
 
-// ฟังก์ชันสำหรับแก้ไขข้อมูล
+// ฟังก์ชันแก้ไข
 function handleEdit() {
-  console.log('[CitizenShow] Editing citizen', { id: props.citizen.id, citizen_id: props.citizen.citizen_id });
-  editCitizen(props.citizen);
+  console.log('CitizenShow: Editing citizen', {
+    id: props.citizen.id,
+    citizen_id: props.citizen.citizen_id,
+  })
+  editCitizen(props.citizen)
 }
 
-// ฟังก์ชันสำหรับลบข้อมูล
+// ฟังก์ชันลบ
 function handleDelete() {
-  console.log('[CitizenShow] Deleting citizen', { id: props.citizen.id, citizen_id: props.citizen.citizen_id });
-  deleteCitizen(props.citizen);
+  console.log('CitizenShow: Deleting citizen', {
+    id: props.citizen.id,
+    citizen_id: props.citizen.citizen_id,
+  })
+  deleteCitizen(props.citizen)
 }
 
-// Log เมื่อ component ถูกสร้าง
-console.log('[CitizenShow] Component initialized', {
+// Log component
+console.log('CitizenShow: Component initialized', {
   citizenId: props.citizen.id,
   citizen_id: props.citizen.citizen_id,
   hasRemark: !!props.citizen.remark,
-});
+})
 </script>
 
 <template>
-  <!-- Head สำหรับตั้งค่า title ของหน้า -->
-  <Head :title="props.title ?? 'รายละเอียดข้อมูลประชากร'" />
+  <!-- Head title -->
+  <Head :title="props.title ?? 'รายละเอียดประชาชน'" />
 
-  <!-- AppLayout พร้อม breadcrumbs -->
+  <!-- AppLayout with breadcrumbs -->
   <AppLayout :breadcrumbs="breadcrumbs">
-    <!-- Container หลัก - รองรับ Responsive Design -->
+    <!-- Container - Responsive Design -->
     <div class="container mx-auto py-4 px-4 sm:px-6 lg:px-8 max-w-5xl">
-      <!-- Header Section พร้อมปุ่ม Action -->
+      <!-- Header Section with Action -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <!-- ส่วนหัวและปุ่มย้อนกลับ -->
+        <!-- หัวข้อ -->
         <div class="flex items-center gap-3">
           <Button
             variant="outline"
@@ -142,17 +133,18 @@ console.log('[CitizenShow] Component initialized', {
           >
             <ArrowLeft class="h-4 w-4" />
           </Button>
+
           <div>
             <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
-              {{ props.title ?? 'รายละเอียดข้อมูลประชากร' }}
+              {{ props.title ?? 'รายละเอียดประชาชน' }}
             </h1>
             <p class="text-sm text-muted-foreground mt-1">
-              ข้อมูลรายละเอียดของประชากร ID: {{ props.citizen.id }}
+              ID: {{ props.citizen.id }}
             </p>
           </div>
         </div>
 
-        <!-- ปุ่ม Actions สำหรับแก้ไขและลบ -->
+        <!-- Actions -->
         <div class="flex items-center gap-2">
           <Button
             variant="outline"
@@ -163,6 +155,7 @@ console.log('[CitizenShow] Component initialized', {
             <Edit class="h-4 w-4" />
             <span class="hidden sm:inline">แก้ไข</span>
           </Button>
+
           <Button
             variant="destructive"
             size="default"
@@ -175,24 +168,23 @@ console.log('[CitizenShow] Component initialized', {
         </div>
       </div>
 
-      <!-- Content Section - Grid Layout สำหรับ Responsive -->
+      <!-- Content Section - Grid Layout Responsive -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Card หลัก: ข้อมูลประชากร -->
+        <!-- ข้อมูลหลัก Card -->
         <Card class="lg:col-span-2">
           <CardHeader>
             <div class="flex items-center justify-between">
               <CardTitle class="flex items-center gap-2">
                 <User class="h-5 w-5" />
-                ข้อมูลประชากร
+                ข้อมูลประชาชน
               </CardTitle>
               <Badge variant="secondary" class="text-xs">
                 ID: {{ String(props.citizen.id).padStart(6, '0') }}
               </Badge>
             </div>
-            <CardDescription>
-              ข้อมูลพื้นฐานของประชากร
-            </CardDescription>
+            <CardDescription>ข้อมูลทั่วไป</CardDescription>
           </CardHeader>
+
           <CardContent class="space-y-4">
             <!-- เลขบัตรประชาชน -->
             <div class="space-y-2">
@@ -218,7 +210,7 @@ console.log('[CitizenShow] Component initialized', {
                   {{ formatDate(props.citizen.birth_date) }}
                 </p>
                 <Badge v-if="calculateAge" variant="outline" class="w-fit">
-                  อายุ {{ calculateAge }} ปี
+                  {{ calculateAge }}
                 </Badge>
               </div>
             </div>
@@ -245,21 +237,20 @@ console.log('[CitizenShow] Component initialized', {
           </CardContent>
         </Card>
 
-        <!-- Card ด้านข้าง: ข้อมูลระบบ -->
+        <!-- ข้อมูลระบบ Card -->
         <Card class="lg:col-span-1 h-fit">
           <CardHeader>
             <CardTitle class="flex items-center gap-2 text-base">
               <Clock class="h-4 w-4" />
               ข้อมูลระบบ
             </CardTitle>
-            <CardDescription class="text-xs">
-              ข้อมูลการสร้างและแก้ไข
-            </CardDescription>
+            <CardDescription class="text-xs">ประวัติการบันทึก</CardDescription>
           </CardHeader>
+
           <CardContent class="space-y-4">
-            <!-- วันที่สร้าง -->
+            <!-- วันที่สร้าง - ใช้ created_at (snake_case) -->
             <div class="space-y-1">
-              <p class="text-xs text-muted-foreground">สร้างเมื่อ</p>
+              <p class="text-xs text-muted-foreground">วันที่สร้าง</p>
               <p class="text-sm font-medium">
                 {{ formatDateTime(props.citizen.created_at) }}
               </p>
@@ -267,7 +258,7 @@ console.log('[CitizenShow] Component initialized', {
 
             <Separator />
 
-            <!-- วันที่แก้ไขล่าสุด -->
+            <!-- วันที่แก้ไขล่าสุด - ใช้ updated_at (snake_case) -->
             <div class="space-y-1">
               <p class="text-xs text-muted-foreground">แก้ไขล่าสุด</p>
               <p class="text-sm font-medium">

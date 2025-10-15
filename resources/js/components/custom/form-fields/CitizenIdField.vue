@@ -3,15 +3,10 @@ import { computed } from 'vue'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertCircle } from 'lucide-vue-next'
+// นำเข้าฟังก์ชันจาก utils แทนการประกาศใหม่
+import { formatThaiCitizenId, isValidThaiCitizenId } from '@/lib/utils'
 
-/**
- * Props สำหรับ CitizenIdField Component
- * - label: ป้ายกำกับของฟิลด์
- * - modelValue: ค่าของ input (รองรับ v-model)
- * - error: ข้อความ error จาก validation
- * - disabled: สถานะ disabled
- * - required: ฟิลด์บังคับหรือไม่
- */
+// Props สำหรับ CitizenIdField Component
 interface Props {
   label?: string
   modelValue: string
@@ -21,111 +16,83 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  label: 'เลขประจำตัวประชาชน',
+  label: 'เลขบัตรประชาชน',
   disabled: false,
   required: true,
 })
 
-/**
- * Emits สำหรับส่งค่ากลับไปยัง parent component
- */
+// Emits สำหรับส่งค่ากลับไปยัง parent component
 const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-/**
- * ฟังก์ชัน format เลขประจำตัวประชาชน
- * จัดรูปแบบให้เป็น X-XXXX-XXXXX-XX-X
- */
-function formatCitizenId(value: string): string {
-  const cleaned = value.replace(/\D/g, '')
-  const limited = cleaned.substring(0, 13)
-
-  if (limited.length <= 1) return limited
-  if (limited.length <= 5) return `${limited.substring(0, 1)}-${limited.substring(1)}`
-  if (limited.length <= 10) return `${limited.substring(0, 1)}-${limited.substring(1, 5)}-${limited.substring(5)}`
-  if (limited.length <= 12) return `${limited.substring(0, 1)}-${limited.substring(1, 5)}-${limited.substring(5, 10)}-${limited.substring(10)}`
-
-  return `${limited.substring(0, 1)}-${limited.substring(1, 5)}-${limited.substring(5, 10)}-${limited.substring(10, 12)}-${limited.substring(12)}`
-}
-
-/**
- * ฟังก์ชันลบขีดและอักขระพิเศษ เหลือเฉพาะตัวเลข
- */
+// ฟังก์ชันลบอักขระที่ไม่ใช่ตัวเลข
 function cleanCitizenId(value: string): string {
   return value.replace(/\D/g, '')
 }
 
-/**
- * Handle input event และ format ค่า
- */
+// Handle input event และจัดรูปแบบ
 function handleInput(event: Event) {
   const input = event.target as HTMLInputElement
-  const formatted = formatCitizenId(input.value)
+  // ใช้ formatThaiCitizenId จาก utils
+  const formatted = formatThaiCitizenId(input.value)
   emit('update:modelValue', formatted)
 }
 
-/**
- * ตรวจสอบความถูกต้องของเลขประจำตัวประชาชนด้วย checksum
- */
+// ตรวจสอบความถูกต้องของเลขบัตรประชาชนด้วย checksum
 const isCitizenIdValid = computed(() => {
   const cleaned = cleanCitizenId(props.modelValue)
-
   if (cleaned.length !== 13) return false
-
-  let sum = 0
-  for (let i = 0; i < 12; i++) {
-    sum += parseInt(cleaned[i]) * (13 - i)
-  }
-  const checkDigit = (11 - (sum % 11)) % 10
-
-  return checkDigit === parseInt(cleaned[12])
+  // ใช้ isValidThaiCitizenId จาก utils
+  return isValidThaiCitizenId(cleaned)
 })
 
-/**
- * ข้อความแจ้งเตือนสำหรับ validation
- */
+// ข้อความแสดงผลการตรวจสอบ validation
 const validationMessage = computed(() => {
   if (!props.modelValue) return ''
 
   const cleaned = cleanCitizenId(props.modelValue)
 
   if (cleaned.length > 0 && cleaned.length < 13) {
-    return `กรุณากรอกให้ครบ 13 หลัก (ป้อนแล้ว ${cleaned.length} หลัก)`
+    return `กรุณากรอกให้ครบ 13 หลัก (ปัจจุบัน ${cleaned.length} หลัก)`
   }
 
   if (cleaned.length === 13 && !isCitizenIdValid.value) {
-    return 'เลขประจำตัวประชาชนไม่ถูกต้อง'
+    return 'เลขบัตรประชาชนไม่ถูกต้อง'
   }
 
   return ''
 })
 
-/**
- * คำนวณ CSS class สำหรับ input
- */
+// CSS class สำหรับ input ตามสถานะ
 const inputClass = computed(() => ({
-  'border-red-500': props.error || (props.modelValue && !isCitizenIdValid.value && cleanCitizenId(props.modelValue).length === 13),
-  'border-green-500': props.modelValue && isCitizenIdValid.value && !props.error,
+  'border-red-500':
+    props.error ||
+    (props.modelValue &&
+      !isCitizenIdValid.value &&
+      cleanCitizenId(props.modelValue).length === 13),
+  'border-green-500':
+    props.modelValue && isCitizenIdValid.value && !props.error,
 }))
 
-/**
- * คำนวณ CSS class สำหรับข้อความ validation
- */
+// CSS class สำหรับข้อความ validation
 const messageClass = computed(() => {
   if (props.error) return 'text-red-500'
-  if (!isCitizenIdValid.value && cleanCitizenId(props.modelValue).length === 13) {
+  if (
+    !isCitizenIdValid.value &&
+    cleanCitizenId(props.modelValue).length === 13
+  )
     return 'text-red-500'
-  }
   return 'text-muted-foreground'
 })
 </script>
 
 <template>
   <div class="space-y-2">
-    <!-- Label พร้อมเครื่องหมาย * สำหรับฟิลด์บังคับ -->
+    <!-- Label -->
     <Label :for="`citizen-id-${$.uid}`">
-      {{ label }} <span v-if="required" class="text-red-500">*</span>
+      {{ label }}
+      <span v-if="required" class="text-red-500">*</span>
     </Label>
 
     <!-- Input Field -->
@@ -151,7 +118,8 @@ const messageClass = computed(() => {
     <!-- Validation Message -->
     <p
       v-else-if="validationMessage"
-      :class="['text-sm flex items-center gap-1', messageClass]"
+      class="text-sm flex items-center gap-1"
+      :class="messageClass"
     >
       <AlertCircle
         v-if="!isCitizenIdValid && cleanCitizenId(modelValue).length === 13"
@@ -162,7 +130,7 @@ const messageClass = computed(() => {
 
     <!-- Helper Text -->
     <p v-else class="text-xs text-muted-foreground">
-      กรอกเลขประจำตัวประชาชน 13 หลัก
+      กรุณากรอกเลขบัตรประชาชน 13 หลัก
     </p>
   </div>
 </template>
