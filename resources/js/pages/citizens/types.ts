@@ -1,8 +1,10 @@
+// ไฟล์: resources/js/pages/citizens/types.ts
 import type { BaseEntity } from '@/composables/useCrudOperations'
-import type { CITIZEN_CUSTOM_ACTIONS } from './constants'
 import type { Component } from 'vue'
 
-// ส่วนอื่นๆคงเดิม - แค่อัปเดต interface ที่เกี่ยวข้องกับ icon
+/**
+ * Citizen Entity
+ */
 export interface Citizen extends BaseEntity {
   citizen_id: string | null
   birth_date: string | null
@@ -11,6 +13,9 @@ export interface Citizen extends BaseEntity {
   updated_at?: string | null
 }
 
+/**
+ * Filters สำหรับการค้นหา Citizen
+ */
 export interface CitizenFilters {
   search?: string
   birth_date_from?: string
@@ -21,9 +26,9 @@ export interface CitizenFilters {
   status?: string
 }
 
-// อัปเดต type สำหรับ Action Key
-export type CitizenActionKey = typeof CITIZEN_CUSTOM_ACTIONS[number]['key']
-
+/**
+ * Sort fields ที่รองรับ
+ */
 export type CitizenSortField = 
   | 'id' 
   | 'citizen_id' 
@@ -32,16 +37,25 @@ export type CitizenSortField =
   | 'created_at' 
   | 'updated_at'
 
+/**
+ * Request สำหรับสร้าง Citizen
+ */
 export interface CitizenCreateRequest {
   citizen_id: string
   birth_date?: string | null
   remark?: string | null
 }
 
+/**
+ * Request สำหรับอัปเดต Citizen
+ */
 export interface CitizenUpdateRequest extends Partial<CitizenCreateRequest> {
   id: number
 }
 
+/**
+ * State สำหรับ Citizen page
+ */
 export interface CitizenState {
   isLoading: boolean
   selectedCitizens: Citizen[]
@@ -51,24 +65,36 @@ export interface CitizenState {
   sortDirection?: 'asc' | 'desc'
 }
 
+/**
+ * Validation errors
+ */
 export interface CitizenValidationErrors {
   citizen_id?: string[]
   birth_date?: string[]
   remark?: string[]
 }
 
+/**
+ * Bulk actions
+ */
 export type CitizenBulkAction = 
   | 'delete'
   | 'export'
   | 'print'
   | 'generateCards'
 
+/**
+ * Bulk action request
+ */
 export interface CitizenBulkRequest {
   ids: number[]
   action: CitizenBulkAction
   options?: Record<string, any>
 }
 
+/**
+ * Expanded content field config
+ */
 export interface CitizenExpandedField {
   key: keyof Citizen
   label: string
@@ -76,6 +102,9 @@ export interface CitizenExpandedField {
   className?: string
 }
 
+/**
+ * Column configuration
+ */
 export interface CitizenColumnConfig {
   field: keyof Citizen
   header: string

@@ -1,12 +1,11 @@
+// ไฟล์: resources/js/pages/citizens/columns.ts
 import type { ComputedRef } from 'vue'
 import { useColumnBuilder, type ColumnConfig, type ColumnCallbacks } from '@/composables/useColumnBuilder'
 import type { Citizen } from './types'
-import type { TableColumn } from '@/types/table'
 import { 
   CITIZEN_CUSTOM_ACTIONS, 
   CITIZEN_COLUMN_CLASSES,
   CITIZEN_DISPLAY_FIELDS,
-  type CitizenCustomAction 
 } from './constants'
 
 /**
@@ -19,14 +18,16 @@ export function useCitizenColumns(
   onEdit: (citizen: Citizen) => void,
   onDelete: (citizen: Citizen) => void,
   onCustomAction: (actionKey: string, citizen: Citizen) => void
-): ComputedRef<TableColumn<Citizen>[]> {
+) {
   
   const { createColumns } = useColumnBuilder<Citizen>()
 
   // กำหนด column configurations
-  const columnConfigs: ColumnConfig[] = [
+  const columnConfigs: ColumnConfig<Citizen>[] = [
     // Column สำหรับ expand rows
-    { type: 'expand' },
+    { 
+      type: 'expand' 
+    },
     
     // ID column (ซ่อนได้)
     {
@@ -41,7 +42,7 @@ export function useCitizenColumns(
     // เลขประจำตัวประชาชน (หลักและไม่สามารถซ่อนได้)
     {
       type: 'text',
-      key: CITIZEN_DISPLAY_FIELDS.ID_FIELD,
+      key: CITIZEN_DISPLAY_FIELDS.ID_FIELD as keyof Citizen, // เพิ่ม type assertion
       header: 'เลขประจำตัวประชาชน',
       sortable: true,
       enableHiding: false, // ไม่อนุญาตให้ซ่อน
@@ -51,7 +52,7 @@ export function useCitizenColumns(
     // วันเกิด
     {
       type: 'date',
-      key: CITIZEN_DISPLAY_FIELDS.DATE_FIELD,
+      key: CITIZEN_DISPLAY_FIELDS.DATE_FIELD as keyof Citizen, // เพิ่ม type assertion
       header: 'วันเกิด',
       sortable: true,
       includeTime: false,
@@ -62,10 +63,11 @@ export function useCitizenColumns(
     // หมายเหตุ
     {
       type: 'text',
-      key: CITIZEN_DISPLAY_FIELDS.REMARK_FIELD,
+      key: CITIZEN_DISPLAY_FIELDS.REMARK_FIELD as keyof Citizen, // เพิ่ม type assertion
       header: 'หมายเหตุ',
       sortable: true,
       maxLength: 50,
+      placeholder: '-', // เพิ่ม placeholder สำหรับค่าว่าง
       enableHiding: true,
       className: CITIZEN_COLUMN_CLASSES.REMARK
     },
@@ -91,8 +93,6 @@ export function useCitizenColumns(
       enableEdit: true,
       enableDelete: true,
       enableHiding: false,
-      
-      // ไม่ต้องแปลง type แล้วเพราะ CITIZEN_CUSTOM_ACTIONS ใช้ Component แล้ว
       customActions: CITIZEN_CUSTOM_ACTIONS
     }
   ]
@@ -107,7 +107,7 @@ export function useCitizenColumns(
   }
 
   // Log สำหรับ debugging
-  console.log('Citizen columns: Created columns configuration', {
+  console.log('📋 Citizen columns: Created columns configuration', {
     totalColumns: columnConfigs.length,
     customActions: CITIZEN_CUSTOM_ACTIONS.length,
     searchableFields: Object.values(CITIZEN_DISPLAY_FIELDS)
