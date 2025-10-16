@@ -1,3 +1,8 @@
+<!-- 
+ไฟล์: resources/js/components/custom/data-table/DataTableDropdown.vue
+คำอธิบาย: Dropdown menu สำหรับแสดงรายการ actions ต่างๆ ของแต่ละแถวในตาราง (แก้ไข TypeScript และเพิ่ม type safety)
+-->
+
 <script setup lang="ts" generic="T extends Record<string, any>">
 import { MoreHorizontal, Copy, Eye, Edit, Trash2, Download } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
@@ -80,68 +85,131 @@ const emit = defineEmits<{
   action: [actionKey: string, item: T]
 }>()
 
-// Computed สำหรับ ID และ Name - แก้ไข TypeScript error
-const itemId = computed(() => {
-  const id = (props.item as any)[props.idKey]
-  return String(id || '')
+/**
+ * ฟังก์ชัน helper สำหรับ safe access property
+ * @param obj - object ที่ต้องการ access
+ * @param key - key ที่ต้องการเข้าถึง
+ * @returns ค่าที่ได้หรือ undefined
+ */
+function safeGetProperty<K extends string>(
+  obj: T, 
+  key: K
+): T[K] | undefined {
+  return obj[key]
+}
+
+/**
+ * แปลงค่าเป็น string อย่างปลอดภัย
+ * @param value - ค่าที่ต้องการแปลง
+ * @returns string หรือ empty string
+ */
+function toSafeString(value: unknown): string {
+  if (value === null || value === undefined) {
+    return ''
+  }
+  return String(value)
+}
+
+// Computed สำหรับ ID - แก้ไข TypeScript error
+const itemId = computed<string>(() => {
+  const id = safeGetProperty(props.item, props.idKey)
+  return toSafeString(id)
 })
 
-const itemName = computed(() => {
-  const name = (props.item as any)[props.nameKey]
-  return String(name || '')
+// Computed สำหรับ Name - แก้ไข TypeScript error
+const itemName = computed<string>(() => {
+  const name = safeGetProperty(props.item, props.nameKey)
+  return toSafeString(name)
 })
 
-// ฟังก์ชัน copy ID ไปยัง clipboard
-async function copyId() {
+/**
+ * ฟังก์ชัน copy ID ไปยัง clipboard
+ */
+async function copyId(): Promise<void> {
   try {
     await navigator.clipboard.writeText(itemId.value)
     toast.success(`ID คัดลอกแล้ว: ${itemId.value}`)
-    console.log('Copy ID success:', itemId.value)
+    console.log('[DataTableDropdown] Copy ID success:', itemId.value)
   } catch (error) {
-    console.error('Copy failed:', error)
+    console.error('[DataTableDropdown] Copy failed:', error)
     toast.error('ไม่สามารถคัดลอก ID ได้')
   }
 }
 
-// ฟังก์ชัน handle actions
-function handleView() {
-  console.log('View item:', props.item)
+/**
+ * ฟังก์ชัน handle view action
+ */
+function handleView(): void {
+  console.log('[DataTableDropdown] View item:', props.item)
   emit('view', props.item)
 }
 
-function handleEdit() {
-  console.log('Edit item:', props.item)
+/**
+ * ฟังก์ชัน handle edit action
+ */
+function handleEdit(): void {
+  console.log('[DataTableDropdown] Edit item:', props.item)
   emit('edit', props.item)
 }
 
-function handleDelete() {
-  console.log('Delete item:', props.item)
+/**
+ * ฟังก์ชัน handle delete action
+ */
+function handleDelete(): void {
+  console.log('[DataTableDropdown] Delete item:', props.item)
   emit('delete', props.item)
 }
 
-function handleDownload() {
-  console.log('Download item:', props.item)
+/**
+ * ฟังก์ชัน handle download action
+ */
+function handleDownload(): void {
+  console.log('[DataTableDropdown] Download item:', props.item)
   emit('download', props.item)
 }
 
-function handleCustomAction(actionKey: string) {
-  console.log('Custom action:', actionKey, props.item)
+/**
+ * ฟังก์ชัน handle custom action
+ * @param actionKey - key ของ action
+ */
+function handleCustomAction(actionKey: string): void {
+  console.log('[DataTableDropdown] Custom action:', actionKey, props.item)
   emit('action', actionKey, props.item)
 }
 
-// Computed สำหรับ filtered actions
-const visibleActions = computed(() => {
+// Computed สำหรับ filtered actions (เฉพาะ actions ที่ visible)
+const visibleActions = computed<ActionItem[]>(() => {
   return props.actions.filter(action => action.visible !== false)
 })
 
 // ตรวจสอบว่ามี actions อะไรเปิดใช้งานบ้าง
-const hasAnyActions = computed(() => {
+const hasAnyActions = computed<boolean>(() => {
   return props.enableCopy || 
          props.enableView || 
          props.enableEdit || 
          props.enableDelete || 
          props.enableDownload || 
          visibleActions.value.length > 0
+})
+
+// ตรวจสอบว่าควรแสดง separator หลัง copy หรือไม่
+const shouldShowCopySeparator = computed<boolean>(() => {
+  return props.enableCopy && (
+    props.enableView || 
+    props.enableEdit || 
+    props.enableDownload || 
+    props.enableDelete || 
+    visibleActions.value.length > 0
+  )
+})
+
+// Log สำหรับ debugging
+console.log('[DataTableDropdown] Component initialized', {
+  idKey: props.idKey,
+  nameKey: props.nameKey,
+  itemId: itemId.value,
+  itemName: itemName.value,
+  hasAnyActions: hasAnyActions.value
 })
 </script>
 
@@ -181,7 +249,7 @@ const hasAnyActions = computed(() => {
       </template>
 
       <!-- Separator หลังจาก Copy -->
-      <DropdownMenuSeparator v-if="enableCopy && (enableView || enableEdit || enableDownload || enableDelete || visibleActions.length > 0)" />
+      <DropdownMenuSeparator v-if="shouldShowCopySeparator" />
 
       <!-- View Action -->
       <template v-if="enableView">
