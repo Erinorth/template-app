@@ -68,44 +68,53 @@ function goLast() {
   }
 }
 
-// ฟังก์ชันเปลี่ยนขนาดหน้า - รองรับ AcceptableValue type แบบเต็ม (รวม Record<string, any>)
-function onChangePageSize(value: string | number | boolean | bigint | Record<string, any> | null | undefined) {
-  // ตรวจสอบ null/undefined
+/**
+ * ฟังก์ชันแปลงค่าเป็น number อย่างปลอดภัย
+ * @param value - ค่าที่ต้องการแปลง
+ * @returns number | null - คืนค่าเป็น number หรือ null ถ้าแปลงไม่ได้
+ */
+function safeParseNumber(value: unknown): number | null {
+  // ตรวจสอบค่า null/undefined
   if (value === null || value === undefined) {
-    console.warn('[DataTablePagination] Null or undefined page size value')
-    return
+    return null
   }
 
   // ตรวจสอบ empty string
   if (value === '') {
-    console.warn('[DataTablePagination] Empty string page size value')
-    return
+    return null
   }
 
-  // แปลงเป็น number
-  let size: number
+  // กรณีเป็น number อยู่แล้ว
+  if (typeof value === 'number') {
+    return isNaN(value) ? null : value
+  }
 
+  // กรณีเป็น string
   if (typeof value === 'string') {
-    size = Number(value)
-  } else if (typeof value === 'number') {
-    size = value
-  } else if (typeof value === 'bigint') {
-    size = Number(value)
-  } else if (typeof value === 'boolean') {
-    console.warn('[DataTablePagination] Boolean value not supported for page size:', value)
-    return
-  } else if (typeof value === 'object') {
-    // Handle Record<string, any> case
-    console.warn('[DataTablePagination] Object value not supported for page size:', value)
-    return
-  } else {
-    console.warn('[DataTablePagination] Unsupported value type:', typeof value, value)
-    return
+    const parsed = Number(value)
+    return isNaN(parsed) ? null : parsed
   }
 
-  // ตรวจสอบว่าเป็นตัวเลขที่ valid
-  if (isNaN(size) || size <= 0) {
-    console.warn('[DataTablePagination] Invalid numeric page size:', value)
+  // กรณีเป็น bigint
+  if (typeof value === 'bigint') {
+    return Number(value)
+  }
+
+  // กรณีอื่นๆ ที่ไม่รองรับ
+  return null
+}
+
+/**
+ * ฟังก์ชันเปลี่ยนขนาดหน้า - refactored version
+ * @param value - ค่าที่ได้จาก Select component
+ */
+function onChangePageSize(value: string | number | boolean | bigint | Record<string, any> | null | undefined) {
+  // แปลงค่าเป็น number อย่างปลอดภัย
+  const size = safeParseNumber(value)
+
+  // ตรวจสอบว่าแปลงสำเร็จและเป็นค่าที่ valid
+  if (size === null || size <= 0) {
+    console.warn('[DataTablePagination] Invalid page size value:', value)
     return
   }
 
