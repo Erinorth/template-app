@@ -1,16 +1,12 @@
-<!-- ไฟล์: resources/js/components/custom/data-table/DataTable.vue -->
+<!-- resourcesjscomponentscustomdata-tableDataTable.vue -->
 <script setup lang="ts" generic="TData">
-import { computed, unref, type Ref, ref } from 'vue'
-import type { 
-  ColumnDef, 
-  ExpandedState,
-  VisibilityState 
-} from '@tanstack/vue-table'
-import { 
-  FlexRender, 
-  getCoreRowModel, 
+import { computed, unref, type Ref, ref, watch } from 'vue'
+import type { ColumnDef, ExpandedState, VisibilityState } from '@tanstack/vue-table'
+import {
+  FlexRender,
+  getCoreRowModel,
   getExpandedRowModel,
-  useVueTable 
+  useVueTable,
 } from '@tanstack/vue-table'
 import {
   Table,
@@ -22,38 +18,40 @@ import {
 } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { valueUpdater } from '@/lib/utils'
+import { ChevronDown, ChevronRight } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 
-// Props รวม loading state และ expanding options
+// Props: loading state, expanding options
 interface Props {
   columns: ColumnDef<TData, any>[]
   data: TData[]
   loading?: boolean | Ref<boolean>
-  // เพิ่ม prop สำหรับกำหนดว่าต้องการแสดงข้อมูลอะไรใน expanded row
+  // prop สำหรับ expanded row
   expandedContent?: (row: TData) => string | object
-  // เพิ่ม prop สำหรับควบคุมการแสดง toolbar
+  // prop สำหรับ toolbar
   showToolbar?: boolean
-  // เพิ่ม prop สำหรับชื่อตาราง
+  // prop สำหรับ title
   title?: string
 }
 
-// แก้ไข withDefaults เพื่อแก้ปัญหา TypeScript generic type
+// withDefaults สำหรับ TypeScript generic type
 const props = defineProps<Props>()
 
-// กำหนด default values แยกต่างหาก
-const { 
-  loading = false, 
+// default values
+const {
+  loading = false,
   expandedContent = (row: TData) => JSON.stringify(row, null, 2),
   showToolbar = false,
-  title = 'ข้อมูล'
+  title,
 } = props
 
-// State สำหรับจัดการการขยายแถว
+// State สำหรับ expanded rows
 const expanded = ref<ExpandedState>({})
 
-// เพิ่ม State สำหรับจัดการการแสดง/ซ่อน columns
+// State สำหรับ columns visibility
 const columnVisibility = ref<VisibilityState>({})
 
-// ใช้งาน useVueTable จาก tanstack-table พร้อม expanding และ column visibility features
+// useVueTable จาก tanstack-table พร้อม expanding และ column visibility features
 const table = useVueTable({
   get data() {
     return props.data
@@ -62,34 +60,53 @@ const table = useVueTable({
     return props.columns
   },
   getCoreRowModel: getCoreRowModel(),
-  getExpandedRowModel: getExpandedRowModel(), // เพิ่ม expanded row model
-  onExpandedChange: updaterOrValue => valueUpdater(updaterOrValue, expanded), // จัดการ state การขยาย
-  onColumnVisibilityChange: updaterOrValue => valueUpdater(updaterOrValue, columnVisibility), // จัดการ column visibility
+  getExpandedRowModel: getExpandedRowModel(), // เพิ่ม expanding model
+  // expanded row model
+  onExpandedChange: (updaterOrValue) => {
+    valueUpdater(updaterOrValue, expanded)
+  },
+  // state สำหรับ expanded
   state: {
-    get expanded() { 
-      return expanded.value 
+    get expanded() {
+      return expanded.value
     },
     get columnVisibility() {
       return columnVisibility.value
-    }
+    },
   },
+  // column visibility state
+  onColumnVisibilityChange: (updaterOrValue) => {
+    valueUpdater(updaterOrValue, columnVisibility)
+  },
+  // เพิ่ม manual expand
+  enableExpanding: true,
+  getRowCanExpand: () => true, // ทุก row สามารถ expand ได้
 })
 
+// ตรวจสอบ loading state
 const isLoading = computed(() => unref(loading) ?? false)
 
-// Export table instance เพื่อให้ parent component สามารถเข้าถึงได้
-defineExpose({ 
+// Export table instance ให้ parent component
+defineExpose({
   table,
   expanded,
-  columnVisibility 
+  columnVisibility,
 })
 
 // Log สำหรับ debugging
-console.log('DataTable: Initialized with column visibility support', props.columns.length, 'columns')
+console.log('[DataTable] Initialized with column visibility and expand support', {
+  columnsCount: props.columns.length,
+  dataCount: props.data.length,
+})
+
+// Watch expanded state เพื่อ debug
+watch(expanded, (newValue) => {
+  console.log('[DataTable] Expanded state changed:', newValue)
+}, { deep: true })
 </script>
 
 <template>
-  <!-- โครงสร้างตาราง UI พร้อม expanding และ column visibility functionality -->
+  <!-- UI พร้อม expanding และ column visibility functionality -->
   <div class="border rounded-md">
     <Table>
       <TableHeader>
@@ -112,6 +129,7 @@ console.log('DataTable: Initialized with column visibility support', props.colum
           </TableHead>
         </TableRow>
       </TableHeader>
+
       <TableBody>
         <!-- Loading State -->
         <template v-if="isLoading">
@@ -121,58 +139,62 @@ console.log('DataTable: Initialized with column visibility support', props.colum
             </TableCell>
           </TableRow>
         </template>
-        
-        <!-- ข้อมูลปกติพร้อมการขยายแถว -->
+
+        <!-- แสดงข้อมูล -->
         <template v-else-if="table.getRowModel().rows?.length">
           <template v-for="row in table.getRowModel().rows" :key="row.id">
             <!-- แถวหลัก -->
-            <TableRow 
+            <TableRow
               :data-state="row.getIsSelected() ? 'selected' : undefined"
-              class="hover:bg-muted/50 transition-colors"
+              class="hover:bg-muted/50 transition-colors cursor-pointer"
             >
-              <TableCell v-for="cell in row.getVisibleCells()" :key="cell.id" class="py-2">
+              <TableCell
+                v-for="cell in row.getVisibleCells()"
+                :key="cell.id"
+                class="py-2"
+              >
                 <FlexRender
                   :render="cell.column.columnDef.cell"
                   :props="cell.getContext()"
                 />
               </TableCell>
             </TableRow>
-            
-            <!-- แถวที่ขยายแล้ว - แสดงเมื่อ row.getIsExpanded() เป็น true -->
+
+            <!-- แถว expanded content - แสดงเมื่อ row.getIsExpanded() === true -->
             <TableRow v-if="row.getIsExpanded()" class="bg-muted/30">
-              <TableCell 
-                :colspan="row.getAllCells().length" 
-                class="p-4"
-              >
-                <!-- Custom content area สำหรับข้อมูลเพิ่มเติม -->
+              <TableCell :colspan="row.getAllCells().length" class="p-4">
+                <!-- Custom content area -->
                 <div class="rounded-md bg-background p-4 border shadow-sm">
                   <div class="flex items-center justify-between mb-3">
-                    <h4 class="text-sm font-medium text-foreground">
-                      รายละเอียดเพิ่มเติม
-                    </h4>
-                    <span class="text-xs text-muted-foreground">
-                      ID: {{ row.id }}
-                    </span>
+                    <h4 class="text-sm font-medium text-foreground">รายละเอียด</h4>
+                    <span class="text-xs text-muted-foreground">ID: {{ row.id }}</span>
                   </div>
-                  
-                  <!-- ใช้ expandedContent prop หรือ default JSON display -->
+
+                  <!-- ใช้ expandedContent prop หรือ default เป็น JSON display -->
                   <div class="bg-muted/50 rounded-md p-3 max-h-64 overflow-auto">
-                    <pre class="text-xs text-muted-foreground whitespace-pre-wrap font-mono">{{ expandedContent(row.original) }}</pre>
+                    <component
+                      v-if="typeof expandedContent(row.original) === 'object'"
+                      :is="expandedContent(row.original)"
+                    />
+                    <pre
+                      v-else
+                      class="text-xs text-muted-foreground whitespace-pre-wrap font-mono"
+                    >{{ expandedContent(row.original) }}</pre>
                   </div>
                 </div>
               </TableCell>
             </TableRow>
           </template>
         </template>
-        
+
         <!-- ไม่มีข้อมูล -->
         <template v-else>
           <TableRow>
             <TableCell :colspan="props.columns.length" class="h-32 text-center">
               <div class="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
                 <div class="text-4xl">📋</div>
-                <p class="font-medium">ไม่มีข้อมูล</p>
-                <p class="text-xs">ลองปรับการค้นหาหรือเพิ่มข้อมูลใหม่</p>
+                <p class="font-medium">ไม่พบข้อมูล</p>
+                <p class="text-xs">ลองค้นหาด้วยคำค้นอื่นหรือเพิ่มข้อมูลใหม่</p>
               </div>
             </TableCell>
           </TableRow>

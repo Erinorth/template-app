@@ -1,16 +1,20 @@
-// ไฟล์: resources/js/pages/citizens/use.ts
-// คำอธิบาย: Composable สำหรับจัดการ operations และ business logic ของ Citizens
+/**
+ * Composable สำหรับจัดการ Citizen operations
+ * แยก business logic ออกจาก component เพื่อให้สามารถ reuse ได้
+ */
 
 import { useCrudOperations, type CustomAction } from '@/composables/useCrudOperations'
-import { useExpandedContent } from '@/composables/useExpandedContent'
+import { h, type Component } from 'vue'
 import { toast } from 'vue-sonner'
 import { router } from '@inertiajs/vue3'
 import type { Citizen } from './types'
-import { CITIZEN_DISPLAY_FIELDS, CITIZEN_ACTIONS_UI_CONFIG } from './constants'
+import { CITIZEN_DISPLAY_FIELDS } from './display'
+import { CITIZEN_ACTIONS_UI_CONFIG, type CitizenActionUIConfig } from './actions'
+import CitizenExpandedRow from './ExpandedRow.vue'
 
 /**
- * Composable สำหรับจัดการ operations ของ Citizens
- * @returns Object ที่ประกอบด้วย CRUD operations และ helper functions
+ * Main composable สำหรับ Citizen operations
+ * ใช้สำหรับจัดการ CRUD และ custom actions
  */
 export function useCitizens() {
   console.log('[useCitizens] Initializing citizen operations')
@@ -18,21 +22,21 @@ export function useCitizens() {
   // สร้าง custom actions map จาก UI config
   const customActionsMap: Record<string, CustomAction<Citizen>> = {}
 
-  // วนลูปสร้าง custom actions จาก configuration
+  // วนลูปเพื่อสร้าง action handlers
   CITIZEN_ACTIONS_UI_CONFIG.forEach((uiConfig) => {
     let handler: CustomAction<Citizen>['handler']
     let defaultOptions: CustomAction<Citizen>['defaultOptions']
 
-    // กำหนด handler ตาม action key
+    // กำหนด handler สำหรับแต่ละ action
     switch (uiConfig.key) {
       case 'generateCard':
         handler = async (citizen, options) => {
           console.log('[generateCard] Generating card for citizen:', citizen.id)
           
-          // จำลองการประมวลผล
+          // Simulate loading
           await new Promise(resolve => setTimeout(resolve, 1500))
           
-          // ส่งคำขอสร้างบัตร
+          // เรียก API สร้างบัตร
           router.post(
             route('citizen-cards.store'),
             { citizen_id: citizen.id },
@@ -98,7 +102,7 @@ export function useCitizens() {
         break
 
       default:
-        // กรณีที่ไม่รู้จัก action
+        // Handler เริ่มต้นสำหรับ action ที่ไม่รู้จัก
         handler = async (citizen) => {
           console.warn(`[${uiConfig.key}] Unknown action`)
           toast.error(`ไม่พบการดำเนินการ "${uiConfig.label}"`)
@@ -106,7 +110,7 @@ export function useCitizens() {
         break
     }
 
-    // เพิ่ม action เข้าไปใน map
+    // เพิ่ม action เข้า map
     customActionsMap[uiConfig.key] = {
       ...uiConfig,
       handler,
@@ -114,7 +118,7 @@ export function useCitizens() {
     }
   })
 
-  // สร้าง CRUD operations instance
+  // สร้าง CRUD operations
   const crud = useCrudOperations<Citizen>({
     routePrefix: 'citizens',
     entityDisplayName: 'ประชากร',
@@ -134,21 +138,17 @@ export function useCitizens() {
     enableLogging: true
   })
 
-  // สร้าง expanded content helper
-  const { createExpandedContent } = useExpandedContent<Citizen>({
-    fields: [
-      { key: 'id', label: 'ID', formatter: (v: any) => v },
-      { 
-        key: 'citizen_id', 
-        label: 'เลขบัตรประชาชน'
-        // ลบ className ออกเนื่องจาก type ไม่รองรับ
-      },
-      { key: 'birth_date', label: 'วันเกิด' },
-      { key: 'remark', label: 'หมายเหตุ', formatter: (v: any) => v || '-' },
-      { key: 'created_at', label: 'สร้างเมื่อ' },
-      { key: 'updated_at', label: 'แก้ไขเมื่อ' }
-    ]
-  })
+  /**
+   * สร้าง expanded row content
+   * ใช้ h() function เพื่อ render CitizenExpandedRow component
+   */
+  const createExpandedContent = (citizen: Citizen): Component => {
+    console.log('[useCitizens] Creating expanded content for citizen:', citizen.id)
+    
+    return h(CitizenExpandedRow, {
+      citizen: citizen
+    })
+  }
 
   console.log('[useCitizens] Citizen operations initialized', {
     customActionsCount: Object.keys(customActionsMap).length,
@@ -163,15 +163,15 @@ export function useCitizens() {
     handleCustomAction: crud.handleCustomAction,
     getDisplayName: crud.getDisplayName,
     
-    // State flags
+    // State
     isDeleting: crud.isDeleting,
     isProcessing: crud.isProcessing,
     currentAction: crud.currentAction,
     
-    // Helper functions
+    // Expanded content
     createExpandedContent,
     
-    // Custom actions array
+    // Custom actions list
     customActions: Object.values(customActionsMap)
   }
 }
